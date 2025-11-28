@@ -28,3 +28,58 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+
+### Cómo instalarlo en tu propio servidor (PM2 + Next.js)
+
+Si quieres alojar el sitio por tu cuenta (por ejemplo en un servidor Linux con acceso SSH), sigue estos pasos rápidos:
+
+1) **Prepara el servidor**
+   - Instala Node.js 18+ y `pnpm` (o `npm` si prefieres). En Ubuntu, por ejemplo:
+     ```bash
+     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+     sudo apt-get install -y nodejs
+     corepack enable && corepack prepare pnpm@latest --activate
+     ```
+   - Crea la carpeta de la app, por ejemplo `/home/rinconcito.co/public_html`, y un subdirectorio `logs` si usarás PM2.
+
+2) **Obtén el código**
+   - Opción rápida: clona el repo directamente en el servidor:
+     ```bash
+     git clone <tu-url-git> /home/rinconcito.co/public_html
+     cd /home/rinconcito.co/public_html
+     ```
+   - Opción alternativa: desarrolla localmente y sube los archivos con `rsync` o SFTP manteniendo la misma estructura.
+
+3) **Configura variables y dependencias**
+   - Copia cualquier archivo `.env.example` a `.env` y ajusta las variables (por ejemplo, la ruta a la base SQLite si decides moverla).
+   - Instala dependencias y genera el build de producción:
+     ```bash
+     pnpm install
+     pnpm run build
+     ```
+
+4) **Arranca en producción con PM2**
+   - El repositorio incluye `ecosystem.config.js` con una configuración lista para Next.js. Desde la raíz del proyecto ejecuta:
+     ```bash
+     pnpm dlx pm2 start ecosystem.config.js
+     pnpm dlx pm2 save
+     ```
+   - Los logs se escribirán en `/home/rinconcito.co/public_html/logs/`. Puedes verlos con:
+     ```bash
+     pnpm dlx pm2 logs rinconcito
+     ```
+
+5) **Actualiza despliegues**
+   - Para nuevas versiones: `git pull`, luego `pnpm install` (si cambian dependencias) y `pnpm run build`. Reinicia con:
+     ```bash
+     pnpm dlx pm2 restart rinconcito
+     ```
+
+6) **Si prefieres sin PM2**
+   - Puedes lanzar el servidor directamente en el puerto que definas:
+     ```bash
+     pnpm install
+     pnpm run build
+     pnpm start -- -p 3002
+     ```
+   - Usa un servicio del sistema (systemd) o un proxy inverso como Nginx para exponer el puerto públicamente.
