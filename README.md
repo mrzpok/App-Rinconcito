@@ -40,13 +40,13 @@ Si quieres alojar el sitio por tu cuenta (por ejemplo en un servidor Linux con a
      sudo apt-get install -y nodejs
      corepack enable && corepack prepare pnpm@latest --activate
      ```
-   - Crea la carpeta de la app, por ejemplo `/home/rinconcito.co/public_html`, y un subdirectorio `logs` si usarás PM2.
+   - Crea la carpeta de la app, por ejemplo `/home/staff.rinconcito.co/public_html`, y un subdirectorio `logs` si usarás PM2.
 
 2) **Obtén el código**
    - Opción rápida: clona el repo directamente en el servidor:
      ```bash
-     git clone <tu-url-git> /home/rinconcito.co/public_html
-     cd /home/rinconcito.co/public_html
+     git clone <tu-url-git> /home/staff.rinconcito.co/public_html
+     cd /home/staff.rinconcito.co/public_html
      ```
    - Opción alternativa: desarrolla localmente y sube los archivos con `rsync` o SFTP manteniendo la misma estructura.
 
@@ -64,7 +64,7 @@ Si quieres alojar el sitio por tu cuenta (por ejemplo en un servidor Linux con a
      pnpm dlx pm2 start ecosystem.config.js
      pnpm dlx pm2 save
      ```
-   - Los logs se escribirán en `/home/rinconcito.co/public_html/logs/`. Puedes verlos con:
+   - Los logs se escribirán en `/home/staff.rinconcito.co/public_html/logs/`. Puedes verlos con:
      ```bash
      pnpm dlx pm2 logs rinconcito
      ```

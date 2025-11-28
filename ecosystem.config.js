@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'rinconcito',
-      cwd: '/home/rinconcito.co/public_html',
+      cwd: '/home/staff.rinconcito.co/public_html',
       script: './node_modules/.bin/next',
       args: 'start -p 3002',
       instances: 1,
@@ -11,8 +11,8 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3002
       },
-      error_file: '/home/rinconcito.co/public_html/logs/error.log',
-      out_file: '/home/rinconcito.co/public_html/logs/out.log',
+      error_file: '/home/staff.rinconcito.co/public_html/logs/error.log',
+      out_file: '/home/staff.rinconcito.co/public_html/logs/out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       
       max_memory_restart: '500M',
