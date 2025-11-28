@@ -24,6 +24,39 @@ export default function Home() {
     }
   ]
 
+  const galleryImages = [
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-playa.jpg',
+      alt: 'Playa frente al Rinconcito',
+      caption: 'Playa tranquila a 2 minutos del hotel',
+    },
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-habitacion.jpg',
+      alt: 'Habitación luminosa con vista al mar',
+      caption: 'Habitaciones confortables y llenas de luz natural',
+    },
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-cabana.jpg',
+      alt: 'Cabañas rodeadas de palmeras',
+      caption: 'Arquitectura caribeña entre palmeras y brisa marina',
+    },
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-desayuno.jpg',
+      alt: 'Desayuno servido en la terraza',
+      caption: 'Desayunos frescos para empezar el día junto al mar',
+    },
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-ducha.jpg',
+      alt: 'Ducha al aire libre entre plantas tropicales',
+      caption: 'Ducha al aire libre rodeada de vegetación tropical',
+    },
+    {
+      src: 'https://rinconcito.co/wp-content/uploads/2024/08/rinconcito-arte.jpg',
+      alt: 'Mural artístico en Rinconcito',
+      caption: 'Arte local decorando los espacios comunes',
+    },
+  ]
+
   return (
     <main className="bg-white">
       {/* Hero Section */}
@@ -129,11 +162,27 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-center text-slate-900 mb-4">Vistas</h2>
           <p className="text-center text-lg text-slate-700 mb-16">Conoce el Rinconcito</p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((idx) => (
-              <div key={idx} className="bg-gradient-to-br from-blue-100 to-teal-100 rounded-xl h-64 flex items-center justify-center border border-blue-200">
-                <p className="text-slate-600">Foto {idx}</p>
+            {galleryImages.map((image, idx) => (
+              <div
+                key={image.src}
+                className="relative overflow-hidden rounded-xl border border-blue-200 shadow-sm group h-64"
+                style={{ background: 'linear-gradient(135deg, #bfdbfe 0%, #99f6e4 100%)' }}
+              >
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading={idx < 2 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3 text-white drop-shadow-lg">
+                  <p className="text-sm font-semibold">{image.alt}</p>
+                  <p className="text-xs text-blue-50">{image.caption}</p>
+                </div>
               </div>
             ))}
           </div>
