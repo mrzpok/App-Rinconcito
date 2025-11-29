@@ -8,15 +8,16 @@ import { Button } from '@/components/ui/button'
 
 export default function AdminPage() {
   const router = useRouter()
-  const user = useSessionUser()
+  const { user, initialized } = useSessionUser()
 
   useEffect(() => {
-    if (!user) {
+    if (!initialized) return
+    if (!user || user.role !== 'super-admin') {
       router.replace('/login?redirect=/admin')
     }
-  }, [router, user])
+  }, [initialized, router, user])
 
-  if (!user) return null
+  if (!initialized || !user) return null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-emerald-50 flex items-center justify-center p-6">

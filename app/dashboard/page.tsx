@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export default function DashboardPage() {
-  const sessionUser = useSessionUser()
+  const { user: sessionUser } = useSessionUser()
   const [tasks, setTasks] = useState(mockHousekeepingTasks)
   const stats = getHotelStats()
   const checkedInCount = mockReservations.filter(r => r.status === 'checked-in').length

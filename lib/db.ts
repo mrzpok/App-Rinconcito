@@ -47,6 +47,8 @@ db.exec(`
     createdAt TEXT
   );
 
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
   CREATE TABLE IF NOT EXISTS rooms (
     id TEXT PRIMARY KEY,
     hotelId TEXT NOT NULL,
@@ -128,15 +130,22 @@ if (count('hotels') === 0) {
   insert.run({ ...seedHotel, createdAt: seedHotel.createdAt.toISOString() })
 }
 
+const insertUser = db.prepare(
+  `INSERT INTO users (id, email, name, password, role, hotelId, active, createdAt)
+   VALUES (@id, @email, @name, @password, @role, @hotelId, @active, @createdAt)
+   ON CONFLICT(email) DO UPDATE SET
+     password=excluded.password,
+     role=excluded.role,
+     active=excluded.active`,
+)
+
 if (count('users') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO users (id, email, name, password, role, hotelId, active, createdAt)
-     VALUES (@id, @email, @name, @password, @role, @hotelId, @active, @createdAt)`,
-  )
-  insert.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
+  insertUser.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
   for (const collaborator of seedCollaborators) {
-    insert.run({ ...collaborator, active: collaborator.active ? 1 : 0, createdAt: collaborator.createdAt.toISOString() })
+    insertUser.run({ ...collaborator, active: collaborator.active ? 1 : 0, createdAt: collaborator.createdAt.toISOString() })
   }
+} else {
+  insertUser.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
 }
 
 if (count('rooms') === 0) {
