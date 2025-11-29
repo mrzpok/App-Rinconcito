@@ -18,6 +18,10 @@ fs.mkdirSync(path.dirname(databasePath), { recursive: true })
 
 const db = new DatabaseSync(databasePath)
 db.exec('PRAGMA foreign_keys = ON;')
+// Improve concurrent reads during build/runtime and avoid lock errors when multiple
+// workers initialize the module at once.
+db.exec('PRAGMA journal_mode = WAL;')
+db.exec('PRAGMA busy_timeout = 5000;')
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS hotels (
