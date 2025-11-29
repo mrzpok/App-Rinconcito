@@ -64,10 +64,13 @@ export default function SettingsPage() {
     loadHotel()
   }, [])
 
-  const handleHotelSave = (e: React.FormEvent) => {
+  const handleHotelSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Hotel settings saved:', hotelData)
-    // Add toast notification here
+    await fetch('/api/hotel', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(hotelData),
+    })
   }
 
   const handleComplianceEdit = (record: ComplianceRecord) => {
@@ -111,16 +114,16 @@ export default function SettingsPage() {
 
       <main className="flex-1 lg:ml-64 pt-16 lg:pt-0">
         <div className="p-6 lg:p-8 max-w-4xl">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Settings & Administration</h1>
-          <p className="text-muted-foreground mb-8">Configure hotel properties and manage compliance</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Configuración y administración</h1>
+          <p className="text-muted-foreground mb-8">Configura los datos del hotel y el cumplimiento</p>
 
           {/* Hotel Settings */}
           <Card className="p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-6">Hotel Information</h2>
+            <h2 className="text-lg font-semibold mb-6">Información del hotel</h2>
             <form onSubmit={handleHotelSave} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Hotel Name</label>
+                  <label className="block text-sm font-medium mb-1">Nombre</label>
                   <input
                     type="text"
                     value={hotelData.name}
@@ -129,7 +132,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Total Rooms</label>
+                  <label className="block text-sm font-medium mb-1">Habitaciones totales</label>
                   <input
                     type="number"
                     value={hotelData.totalRooms}
@@ -141,7 +144,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
+                <label className="block text-sm font-medium mb-1">Dirección</label>
                 <input
                   type="text"
                   value={hotelData.address}
@@ -152,7 +155,7 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1">City</label>
+                  <label className="block text-sm font-medium mb-1">Ciudad</label>
                   <input
                     type="text"
                     value={hotelData.city}
@@ -161,7 +164,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Country</label>
+                  <label className="block text-sm font-medium mb-1">País</label>
                   <input
                     type="text"
                     value={hotelData.country}
@@ -173,7 +176,7 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <label className="block text-sm font-medium mb-1">Teléfono</label>
                   <input
                     type="tel"
                     value={hotelData.phone}
@@ -182,7 +185,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">Correo</label>
                   <input
                     type="email"
                     value={hotelData.email}
@@ -194,21 +197,21 @@ export default function SettingsPage() {
 
               <Button className="gap-2" onClick={handleHotelSave}>
                 <Save size={18} />
-                Save Hotel Settings
+                Guardar datos del hotel
               </Button>
             </form>
           </Card>
 
-          {/* Compliance Management */}
+          {/* Cumplimiento */}
           <Card className="p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold">Regulatory Compliance</h2>
-                <p className="text-sm text-muted-foreground mt-1">Manage compliance and regulatory requirements</p>
+                <h2 className="text-lg font-semibold">Cumplimiento normativo</h2>
+                <p className="text-sm text-muted-foreground mt-1">Gestiona requisitos y reportes obligatorios</p>
               </div>
               <Button className="gap-2" onClick={handleAddCompliance}>
                 <Plus size={18} />
-                Add Record
+                Añadir registro
               </Button>
             </div>
 
@@ -216,8 +219,8 @@ export default function SettingsPage() {
               <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-start gap-3">
                 <AlertCircle size={20} className="text-destructive flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-destructive">{overdueRecords} Overdue Compliance Record{overdueRecords !== 1 ? 's' : ''}</p>
-                  <p className="text-sm text-muted-foreground mt-1">Please update these records as soon as possible.</p>
+                  <p className="font-semibold text-destructive">{overdueRecords} registro(s) de cumplimiento vencido</p>
+                  <p className="text-sm text-muted-foreground mt-1">Actualiza estos pendientes lo antes posible.</p>
                 </div>
               </div>
             )}
@@ -234,47 +237,57 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          {/* Integration Settings */}
+          {/* Integraciones */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-6">System Integrations</h2>
+            <h2 className="text-lg font-semibold mb-6">Integraciones</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                 <div>
-                  <p className="font-medium">Booking.com Integration</p>
-                  <p className="text-sm text-muted-foreground">Sync reservations automatically</p>
+                  <p className="font-medium">Booking.com</p>
+                  <p className="text-sm text-muted-foreground">Sincroniza reservas automáticamente</p>
                 </div>
                 <Button size="sm" variant="outline">
-                  Configure
+                  Configurar
                 </Button>
               </div>
 
               <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                 <div>
-                  <p className="font-medium">Airbnb Integration</p>
-                  <p className="text-sm text-muted-foreground">Manage Airbnb listings</p>
+                  <p className="font-medium">Airbnb</p>
+                  <p className="text-sm text-muted-foreground">Administra anuncios y calendario</p>
                 </div>
                 <Button size="sm" variant="outline">
-                  Configure
+                  Configurar
                 </Button>
               </div>
 
               <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                 <div>
-                  <p className="font-medium">Expedia Integration</p>
-                  <p className="text-sm text-muted-foreground">Connect to Expedia for Hotels</p>
+                  <p className="font-medium">APIs personalizadas</p>
+                  <p className="text-sm text-muted-foreground">Conecta con otros sistemas del hotel</p>
                 </div>
                 <Button size="sm" variant="outline">
-                  Configure
+                  Configurar
                 </Button>
               </div>
 
               <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                 <div>
-                  <p className="font-medium">Payment Gateway</p>
-                  <p className="text-sm text-muted-foreground">Stripe payment processing</p>
+                  <p className="font-medium">Expedia</p>
+                  <p className="text-sm text-muted-foreground">Conecta con Expedia para hoteles</p>
                 </div>
                 <Button size="sm" variant="outline">
-                  Configure
+                  Configurar
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                <div>
+                  <p className="font-medium">Pasarela de pagos</p>
+                  <p className="text-sm text-muted-foreground">Cobros seguros con Stripe</p>
+                </div>
+                <Button size="sm" variant="outline">
+                  Configurar
                 </Button>
               </div>
             </div>

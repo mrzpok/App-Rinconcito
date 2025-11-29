@@ -116,7 +116,17 @@ function seedIfNeeded() {
 
 seedIfNeeded()
 
-function mapDate<T extends { createdAt?: string; updatedAt?: string; checkInDate?: string; checkOutDate?: string; lastCleaned?: string; completedAt?: string }>(
+function mapDate<
+  T extends {
+    createdAt?: string
+    updatedAt?: string
+    checkInDate?: string
+    checkOutDate?: string
+    lastCleaned?: string
+    completedAt?: string
+    lastRestocked?: string
+  },
+>(
   record: T,
 ) {
   const mapped: any = { ...record }
@@ -126,6 +136,7 @@ function mapDate<T extends { createdAt?: string; updatedAt?: string; checkInDate
   if (record.checkOutDate) mapped.checkOutDate = new Date(record.checkOutDate)
   if (record.lastCleaned) mapped.lastCleaned = new Date(record.lastCleaned)
   if (record.completedAt) mapped.completedAt = new Date(record.completedAt)
+   if (record.lastRestocked) mapped.lastRestocked = new Date(record.lastRestocked)
   return mapped
 }
 
@@ -156,10 +167,30 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   }
 
   if (sql.startsWith('UPDATE inventory SET')) {
-    const [quantity, location, id] = values
+    if (values.length === 3) {
+      const [quantity, location, id] = values
+      const idx = dbData.inventory.findIndex((item) => item.id === id)
+      if (idx !== -1) {
+        dbData.inventory[idx] = { ...dbData.inventory[idx], quantity: Number(quantity), location }
+        saveData(dbData)
+      }
+      return []
+    }
+
+    const [name, category, quantity, minimumLevel, unit, supplier, location, lastRestocked, id] = values
     const idx = dbData.inventory.findIndex((item) => item.id === id)
     if (idx !== -1) {
-      dbData.inventory[idx] = { ...dbData.inventory[idx], quantity: Number(quantity), location }
+      dbData.inventory[idx] = {
+        ...dbData.inventory[idx],
+        name,
+        category,
+        quantity: Number(quantity),
+        minimumLevel: Number(minimumLevel),
+        unit,
+        supplier,
+        location,
+        lastRestocked,
+      }
       saveData(dbData)
     }
     return []
@@ -191,6 +222,51 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return []
   }
 
+  if (sql.startsWith('INSERT INTO inventory')) {
+    const [id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, createdAt] = values
+    dbData.inventory.push({
+      id,
+      hotelId,
+      name,
+      category,
+      quantity: Number(quantity),
+      minimumLevel: Number(minimumLevel),
+      unit,
+      supplier,
+      lastRestocked,
+      location,
+      createdAt,
+    })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE hotels SET')) {
+    const [name, address, city, country, phone, email, totalRooms, id] = values
+    const idx = dbData.hotels.findIndex((hotel) => hotel.id === id)
+    if (idx !== -1) {
+      dbData.hotels[idx] = {
+        ...dbData.hotels[idx],
+        name,
+        address,
+        city,
+        country,
+        phone,
+        email,
+        totalRooms: Number(totalRooms),
+      }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO hotels')) {
+    const [id, name, address, city, country, phone, email, totalRooms, createdAt] = values
+    dbData.hotels.push({ id, name, address, city, country, phone, email, totalRooms, createdAt })
+    saveData(dbData)
+    return []
+  }
+
   return []
 }
 
@@ -212,6 +288,11 @@ export async function queryOne<T = any>(sql: string, values: any[] = []): Promis
     const id = values[0]
     const room = dbData.rooms.find((r) => r.id === id)
     return (room ? mapDate(room) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT id, name, address')) {
+    const hotel = dbData.hotels[0]
+    return (hotel ? mapDate(hotel) : null) as T | null
   }
 
   return null

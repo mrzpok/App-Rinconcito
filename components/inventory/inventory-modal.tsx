@@ -4,13 +4,13 @@ import { InventoryItem } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface InventoryModalProps {
   item?: InventoryItem
   isOpen: boolean
   onClose: () => void
-  onSave?: (item: InventoryItem) => void
+  onSave?: (item: InventoryItem) => Promise<void> | void
 }
 
 export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModalProps) {
@@ -28,11 +28,29 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
     }
   )
 
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(
+        item || {
+          id: '',
+          hotelId: '1',
+          name: '',
+          category: 'supplies',
+          quantity: 0,
+          minimumLevel: 10,
+          unit: 'units',
+          location: 'Bodega',
+          createdAt: new Date(),
+        },
+      )
+    }
+  }, [item, isOpen])
+
   if (!isOpen) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave?.(formData)
+    await onSave?.(formData)
     onClose()
   }
 
@@ -40,7 +58,7 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card">
-          <h2 className="text-lg font-semibold">{item ? 'Edit Item' : 'Add Item'}</h2>
+          <h2 className="text-lg font-semibold">{item ? 'Editar artículo' : 'Agregar artículo'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
             <X size={20} />
           </button>
@@ -49,10 +67,10 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Item Information */}
           <div>
-            <h3 className="text-sm font-semibold mb-4 text-primary">Item Information</h3>
+            <h3 className="text-sm font-semibold mb-4 text-primary">Información del artículo</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Item Name</label>
+                <label className="block text-sm font-medium mb-1">Nombre</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -64,20 +82,20 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <label className="block text-sm font-medium mb-1">Categoría</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as InventoryItem['category'] })}
                     className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="supplies">Supplies</option>
-                    <option value="amenities">Amenities</option>
-                    <option value="equipment">Equipment</option>
-                    <option value="linens">Linens</option>
+                    <option value="supplies">Suministros</option>
+                    <option value="amenities">Amenidades</option>
+                    <option value="equipment">Equipos</option>
+                    <option value="linens">Lencería</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Unit</label>
+                  <label className="block text-sm font-medium mb-1">Unidad</label>
                   <input
                     type="text"
                     value={formData.unit}
@@ -89,7 +107,7 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Location</label>
+                <label className="block text-sm font-medium mb-1">Ubicación</label>
                 <input
                   type="text"
                   value={formData.location}
@@ -104,11 +122,11 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
 
           {/* Stock Information */}
           <div>
-            <h3 className="text-sm font-semibold mb-4 text-primary">Stock Information</h3>
+            <h3 className="text-sm font-semibold mb-4 text-primary">Existencias</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Current Quantity</label>
+                  <label className="block text-sm font-medium mb-1">Cantidad actual</label>
                   <input
                     type="number"
                     value={formData.quantity}
@@ -119,7 +137,7 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Minimum Level</label>
+                  <label className="block text-sm font-medium mb-1">Nivel mínimo</label>
                   <input
                     type="number"
                     value={formData.minimumLevel}
@@ -132,7 +150,7 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Supplier (Optional)</label>
+                <label className="block text-sm font-medium mb-1">Proveedor (opcional)</label>
                 <input
                   type="text"
                   value={formData.supplier || ''}
@@ -146,10 +164,10 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
 
           <div className="flex gap-3 pt-4 border-t border-border">
             <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" className="flex-1">
-              Save Item
+              Guardar
             </Button>
           </div>
         </form>
