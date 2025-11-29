@@ -16,7 +16,8 @@ export default function BaseDatosPage() {
         <AlertCircle className="h-4 w-4 text-orange-600" />
         <AlertTitle className="text-orange-900">Estado Actual</AlertTitle>
         <AlertDescription className="text-orange-800">
-          La aplicación ya está guardando los datos en un archivo <strong>SQLite local</strong> usando el motor ligero incluido en Node.js.
+          La aplicación ya está guardando los datos en un archivo <strong>SQLite local</strong> usando el motor ligero experimental incluido en Node.js
+          cuando se ejecuta con <code className="bg-white px-1 py-0.5 rounded">NODE_OPTIONS=--experimental-sqlite</code>.
           El archivo se crea automáticamente en <code className="bg-white px-2 py-1 rounded">/data/rinconcito.db</code> si no existe.
         </AlertDescription>
       </Alert>
@@ -36,7 +37,8 @@ export default function BaseDatosPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900">Motor:</p>
-              <p className="text-sm text-gray-700">SQLite integrado (node:sqlite) con datos iniciales de <code className="bg-gray-100 px-1 py-0.5 rounded">lib/seed-data.ts</code></p>
+              <p className="text-sm text-gray-700">SQLite integrado (node:sqlite) con datos iniciales de <code className="bg-gray-100 px-1 py-0.5 rounded">lib/seed-data.ts</code>. Ejecuta con
+                <code className="bg-white px-1 py-0.5 rounded ml-1">NODE_OPTIONS=--experimental-sqlite</code>.</p>
             </div>
           </CardContent>
         </Card>
@@ -69,7 +71,8 @@ export default function BaseDatosPage() {
               <p><strong>Pasos:</strong></p>
               <ol className="list-decimal list-inside space-y-1 text-gray-700">
                 <li>Configura la ruta del archivo con <code className="bg-white px-2 py-1 rounded">SQLITE_PATH=./data/rinconcito.db</code></li>
-                <li>Revisa la conexión en <code className="bg-white px-2 py-1 rounded">lib/db.ts</code> (usa <code className="bg-white px-1 py-0.5 rounded">node:sqlite</code>)</li>
+                <li>Revisa la conexión en <code className="bg-white px-2 py-1 rounded">lib/db.ts</code> (usa <code className="bg-white px-1 py-0.5 rounded">node:sqlite</code> con
+                  <code className="bg-white px-1 py-0.5 rounded ml-1">NODE_OPTIONS=--experimental-sqlite</code>)</li>
                 <li>Actualiza los datos iniciales en <code className="bg-white px-2 py-1 rounded">lib/seed-data.ts</code> si quieres otros valores</li>
               </ol>
             </div>
