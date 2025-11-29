@@ -1,26 +1,32 @@
-import { Hotel, User, Room, Reservation, HousekeepingTask, InventoryItem } from './types'
+import { Hotel, User, Room, Reservation, HousekeepingTask, InventoryItem, InventoryMovement } from './types'
 import {
   seedHotel,
   seedHousekeepingTasks,
   seedInventory,
+  seedInventoryMovements,
   seedReservations,
   seedRooms,
   seedUser,
+  seedCollaborators,
 } from './seed-data'
 
 export const mockHotel: Hotel = seedHotel
 export const mockUser: User = seedUser
+export const mockCollaborators: User[] = seedCollaborators
 export const mockRooms: Room[] = seedRooms
 export const mockReservations: Reservation[] = seedReservations
 export const mockHousekeepingTasks: HousekeepingTask[] = seedHousekeepingTasks
 export const mockInventory: InventoryItem[] = seedInventory
+export const mockInventoryMovements: InventoryMovement[] = seedInventoryMovements
 
 export function getHotel(): Hotel {
   return mockHotel
 }
 
 export function getUser(id: string): User | null {
-  return mockUser.id === id ? mockUser : null
+  if (mockUser.id === id) return mockUser
+  const collaborator = mockCollaborators.find(u => u.id === id)
+  return collaborator ?? null
 }
 
 export function getRooms(): Room[] {
@@ -42,15 +48,15 @@ export function getInventory(): InventoryItem[] {
 export function getHotelStats() {
   const rooms = getRooms()
   const totalRooms = rooms.length
-  const availableRooms = rooms.filter(r => r.status === 'disponible').length
-  const occupiedRooms = rooms.filter(r => r.status === 'ocupada').length
+  const availableRooms = rooms.filter(r => r.status === 'available').length
+  const occupiedRooms = rooms.filter(r => r.status === 'occupied').length
   const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0
 
   const reservations = getReservations()
   const todayRevenue = reservations.reduce((sum) => sum + 150, 0)
 
   const tasks = getHousekeepingTasks()
-  const pendingTasks = tasks.filter(t => t.status === 'pendiente').length
+  const pendingTasks = tasks.filter(t => t.status === 'pending').length
 
   const inventory = getInventory()
   const lowStockItems = inventory.filter(i => i.quantity <= i.minimumLevel).length

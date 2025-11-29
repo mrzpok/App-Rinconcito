@@ -6,8 +6,10 @@ import {
   seedHotel,
   seedHousekeepingTasks,
   seedInventory,
+  seedInventoryMovements,
   seedReservations,
   seedRooms,
+  seedCollaborators,
   seedUser,
 } from './seed-data'
 
@@ -34,6 +36,7 @@ db.exec(`
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL,
     name TEXT NOT NULL,
+    password TEXT,
     role TEXT NOT NULL,
     hotelId TEXT NOT NULL,
     active INTEGER DEFAULT 1,
@@ -78,6 +81,8 @@ db.exec(`
     status TEXT,
     taskType TEXT,
     priority TEXT,
+    photoUrl TEXT,
+    completedAt TEXT,
     createdAt TEXT
   );
 
@@ -89,6 +94,18 @@ db.exec(`
     quantity INTEGER,
     minimumLevel INTEGER,
     unit TEXT,
+    location TEXT,
+    createdAt TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS inventory_movements (
+    id TEXT PRIMARY KEY,
+    itemId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    change INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    locationFrom TEXT,
+    locationTo TEXT,
     createdAt TEXT
   );
 `)
@@ -109,10 +126,13 @@ if (count('hotels') === 0) {
 
 if (count('users') === 0) {
   const insert = db.prepare(
-    `INSERT INTO users (id, email, name, role, hotelId, active, createdAt)
-     VALUES (@id, @email, @name, @role, @hotelId, @active, @createdAt)`,
+    `INSERT INTO users (id, email, name, password, role, hotelId, active, createdAt)
+     VALUES (@id, @email, @name, @password, @role, @hotelId, @active, @createdAt)`,
   )
   insert.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
+  for (const collaborator of seedCollaborators) {
+    insert.run({ ...collaborator, active: collaborator.active ? 1 : 0, createdAt: collaborator.createdAt.toISOString() })
+  }
 }
 
 if (count('rooms') === 0) {
@@ -162,11 +182,21 @@ if (count('housekeeping_tasks') === 0) {
 
 if (count('inventory') === 0) {
   const insert = db.prepare(
-    `INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, createdAt)
-     VALUES (@id, @hotelId, @name, @category, @quantity, @minimumLevel, @unit, @createdAt)`,
+    `INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, location, createdAt)
+     VALUES (@id, @hotelId, @name, @category, @quantity, @minimumLevel, @unit, @location, @createdAt)`,
   )
   for (const item of seedInventory) {
     insert.run({ ...item, createdAt: item.createdAt.toISOString() })
+  }
+}
+
+if (count('inventory_movements') === 0) {
+  const insert = db.prepare(
+    `INSERT INTO inventory_movements (id, itemId, userId, change, reason, locationFrom, locationTo, createdAt)
+     VALUES (@id, @itemId, @userId, @change, @reason, @locationFrom, @locationTo, @createdAt)`,
+  )
+  for (const movement of seedInventoryMovements) {
+    insert.run({ ...movement, createdAt: movement.createdAt.toISOString() })
   }
 }
 

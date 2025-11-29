@@ -23,6 +23,7 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
       quantity: 0,
       minimumLevel: 10,
       unit: 'units',
+      location: 'Bodega',
       createdAt: new Date(),
     }
   )
@@ -85,6 +86,18 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
                     placeholder="e.g., pieces, sets"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Location</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Habitación, cocina, bodega"
+                  required
+                />
               </div>
             </div>
           </div>

@@ -82,4 +82,12 @@ Si quieres alojar el sitio por tu cuenta (por ejemplo en un servidor Linux con a
      pnpm run build
      pnpm start -- -p 3002
      ```
-   - Usa un servicio del sistema (systemd) o un proxy inverso como Nginx para exponer el puerto públicamente.
+  - Usa un servicio del sistema (systemd) o un proxy inverso como Nginx para exponer el puerto públicamente.
+
+## Accesos y roles
+
+- **Super administrador:** `admin@rinconcito.co` / `PAssword2@!!7` (accede a `/admin` y controla todo el panel).
+- **Colaborador:** `colaborador@rinconcito.co` / `colaborador` (ve sus tareas y puede registrar movimientos de inventario en su ubicación).
+- **Housekeeper:** `housekeeper@rinconcito.co` / `housekeeper` (puede crear, mover y reabastecer inventario además de actualizar tareas de limpieza).
+
+Cada finalización de tarea solicita URL de foto como evidencia y los movimientos de inventario quedan registrados con la ubicación de origen y destino.

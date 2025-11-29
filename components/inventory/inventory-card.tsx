@@ -86,6 +86,13 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
           </div>
         )}
 
+        {item.location && (
+          <div>
+            <span className="text-sm text-muted-foreground">Ubicación:</span>
+            <p className="text-sm font-semibold">{item.location}</p>
+          </div>
+        )}
+
         {item.lastRestocked && (
           <p className="text-xs text-muted-foreground">
             Last restocked: {new Date(item.lastRestocked).toLocaleDateString()}

@@ -1,10 +1,11 @@
 // PMS Core Types
-export type UserRole = 'admin' | 'manager' | 'staff' | 'housekeeping' | 'front_desk';
+export type UserRole = 'super-admin' | 'colaborador' | 'housekeeper';
 
 export interface User {
   id: string;
   email: string;
   name: string;
+  password?: string;
   role: UserRole;
   hotelId: string;
   active: boolean;
@@ -73,6 +74,7 @@ export interface HousekeepingTask {
   notes?: string;
   createdAt: Date;
   completedAt?: Date;
+  photoUrl?: string;
 }
 
 export interface InventoryItem {
@@ -85,6 +87,18 @@ export interface InventoryItem {
   unit: string;
   supplier?: string;
   lastRestocked?: Date;
+  createdAt: Date;
+  location: string;
+}
+
+export interface InventoryMovement {
+  id: string;
+  itemId: string;
+  userId: string;
+  change: number;
+  reason: 'use' | 'add' | 'move';
+  locationFrom?: string;
+  locationTo?: string;
   createdAt: Date;
 }
 
