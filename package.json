@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "NODE_OPTIONS=--experimental-sqlite next build",
-    "dev": "NODE_OPTIONS=--experimental-sqlite next dev",
+    "build": "next build",
+    "dev": "next dev",
     "lint": "eslint .",
-    "start": "NODE_OPTIONS=--experimental-sqlite next start"
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -39,6 +39,7 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
+    "better-sqlite3": "^9.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",

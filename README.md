@@ -40,7 +40,7 @@ Si quieres alojar el sitio por tu cuenta (por ejemplo en un servidor Linux con a
      sudo apt-get install -y nodejs
      corepack enable && corepack prepare pnpm@latest --activate
      ```
-   - Habilita SQLite nativo añadiendo la bandera: exporta `NODE_OPTIONS=--experimental-sqlite` (se usa en los scripts del repo para que Turbopack reconozca `node:sqlite`).
+   - SQLite viene preconfigurado con la librería `better-sqlite3`, no necesitas banderas experimentales.
    - Crea la carpeta de la app, por ejemplo `/home/staff.rinconcito.co/public_html`, y un subdirectorio `logs` si usarás PM2.
 
 2) **Obtén el código**

@@ -1,7 +1,7 @@
 import 'server-only'
 import fs from 'node:fs'
 import path from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
+import Database from 'better-sqlite3'
 import {
   seedHotel,
   seedHousekeepingTasks,
@@ -16,7 +16,7 @@ import {
 const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.db')
 fs.mkdirSync(path.dirname(databasePath), { recursive: true })
 
-const db = new DatabaseSync(databasePath)
+const db = new Database(databasePath)
 db.exec('PRAGMA foreign_keys = ON;')
 // Improve concurrent reads during build/runtime and avoid lock errors when multiple
 // workers initialize the module at once.
