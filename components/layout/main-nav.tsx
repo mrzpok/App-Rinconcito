@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { LayoutDashboard, BookOpen, Book as Door, Book as Broom, Package, Settings, LogOut, Menu, X, ChevronDown, Database } from 'lucide-react'
 import { useState } from 'react'
-import { mockUser } from '@/lib/mock-data'
+import { useSessionUser } from '@/lib/use-session'
 
 const navItems = [
   { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
@@ -21,6 +21,10 @@ export function MainNav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const { user } = useSessionUser()
+
+  const displayName = user?.name || 'Invitado'
+  const displayRole = user?.role === 'super-admin' ? 'Super administrador' : user?.role || 'Usuario'
 
   return (
     <>
@@ -82,10 +86,8 @@ export function MainNav() {
             className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-muted transition-colors mb-2"
           >
             <div className="text-left">
-              <p className="text-sm font-semibold">{mockUser.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {mockUser.role === 'manager' ? 'Gerente' : 'Usuario'}
-              </p>
+              <p className="text-sm font-semibold">{displayName}</p>
+              <p className="text-xs text-muted-foreground capitalize">{displayRole}</p>
             </div>
             <ChevronDown size={16} />
           </button>

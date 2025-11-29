@@ -1,22 +1,73 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { MainNav } from '@/components/layout/main-nav'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { UpcomingCheckouts } from '@/components/dashboard/upcoming-checkouts'
 import { RoomStatusChart } from '@/components/dashboard/room-status-chart'
 import { TrendingUp, Users, AlertCircle, Users2, Package, CheckCircle } from 'lucide-react'
-import { getHotelStats, mockRooms, mockReservations, mockHousekeepingTasks } from '@/lib/mock-data'
 import { useSessionUser } from '@/lib/use-session'
-import { useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { HousekeepingTask, Reservation, Room } from '@/lib/types'
 
 export default function DashboardPage() {
   const { user: sessionUser } = useSessionUser()
-  const [tasks, setTasks] = useState(mockHousekeepingTasks)
-  const stats = getHotelStats()
-  const checkedInCount = mockReservations.filter(r => r.status === 'checked-in').length
+  const [tasks, setTasks] = useState<HousekeepingTask[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [reservations, setReservations] = useState<Reservation[]>([])
+
+  useEffect(() => {
+    async function loadData() {
+      const [roomsRes, reservationsRes, tasksRes] = await Promise.all([
+        fetch('/api/rooms'),
+        fetch('/api/reservations'),
+        fetch('/api/housekeeping'),
+      ])
+
+      const roomsJson = await roomsRes.json()
+      const reservationsJson = await reservationsRes.json()
+      const tasksJson = await tasksRes.json()
+
+      setRooms(roomsJson.rooms || [])
+      setReservations(
+        (reservationsJson.reservations || []).map((res: any) => ({
+          ...res,
+          checkInDate: new Date(res.checkInDate),
+          checkOutDate: new Date(res.checkOutDate),
+          createdAt: new Date(res.createdAt),
+          updatedAt: new Date(res.updatedAt),
+        })),
+      )
+      setTasks(
+        (tasksJson.tasks || []).map((task: any) => ({
+          ...task,
+          createdAt: new Date(task.createdAt),
+          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+        })),
+      )
+    }
+
+    loadData()
+  }, [])
+
+  const stats = useMemo(() => {
+    const totalRooms = rooms.length
+    const availableRooms = rooms.filter((r) => r.status === 'available').length
+    const occupiedRooms = rooms.filter((r) => r.status === 'occupied').length
+    const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0
+    const todayRevenue = reservations.reduce(
+      (sum, reservation) => sum + (reservation.status !== 'cancelled' ? reservation.totalPrice : 0),
+      0,
+    )
+    const pendingTasks = tasks.filter((t) => t.status === 'pending').length
+    const lowStockItems = 2
+
+    return { totalRooms, availableRooms, occupiedRooms, occupancyRate, todayRevenue, pendingTasks, lowStockItems }
+  }, [rooms, reservations, tasks])
+
+  const checkedInCount = reservations.filter((r) => r.status === 'checked-in').length
   const myTasks = useMemo(
     () => tasks.filter(task => task.assignedTo === sessionUser?.id),
     [sessionUser?.id, tasks],
@@ -142,12 +193,12 @@ export default function DashboardPage() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <QuickActions />
-            <UpcomingCheckouts reservations={mockReservations} />
+            <UpcomingCheckouts reservations={reservations} />
           </div>
 
           {/* Room Status Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RoomStatusChart rooms={mockRooms} />
+              <RoomStatusChart rooms={rooms} />
             
             {/* Inventory Alerts */}
             <div className="bg-card border rounded-lg p-6">

@@ -1,5 +1,5 @@
 import { startAirbnbSyncSchedule, stopAirbnbSyncSchedule } from '@/lib/cron-sync'
-import { airbnbSyncState } from '@/lib/mock-data'
+import { airbnbSyncState } from '@/lib/airbnb-state'
 
 export async function POST(request: Request) {
   try {

@@ -1,10 +1,16 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { mockRooms } from '@/lib/mock-data'
 import Link from 'next/link'
 import { Users, Wind, Tv as TV, Wifi } from 'lucide-react'
+import { query } from '@/lib/db'
+import { Room } from '@/lib/types'
 
-export default function HabitacionesPage() {
+export default async function HabitacionesPage() {
+  const rooms = (await query<Room>('SELECT * FROM rooms ORDER BY roomNumber ASC')).map((room) => ({
+    ...room,
+    lastCleaned: room.lastCleaned ? new Date(room.lastCleaned) : undefined,
+    createdAt: new Date(room.createdAt),
+  }))
   const roomTypeTranslations: Record<string, string> = {
     single: 'Habitación Individual',
     double: 'Habitación Doble',

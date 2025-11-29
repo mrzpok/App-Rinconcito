@@ -6,12 +6,21 @@ import { ComplianceModal } from '@/components/settings/compliance-modal'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Save, Plus, AlertCircle } from 'lucide-react'
-import { useState } from 'react'
-import { mockHotel } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
 import { ComplianceRecord } from '@/lib/types'
 
 export default function SettingsPage() {
-  const [hotelData, setHotelData] = useState(mockHotel)
+  const [hotelData, setHotelData] = useState({
+    id: '',
+    name: '',
+    address: '',
+    city: '',
+    country: '',
+    phone: '',
+    email: '',
+    totalRooms: 0,
+    createdAt: new Date(),
+  })
   const [complianceRecords, setComplianceRecords] = useState<ComplianceRecord[]>([
     {
       id: '1',
@@ -42,6 +51,18 @@ export default function SettingsPage() {
   ])
   const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<ComplianceRecord | undefined>()
+
+  useEffect(() => {
+    async function loadHotel() {
+      const response = await fetch('/api/hotel')
+      const data = await response.json()
+      if (data.hotel) {
+        setHotelData({ ...data.hotel, createdAt: new Date(data.hotel.createdAt) })
+      }
+    }
+
+    loadHotel()
+  }, [])
 
   const handleHotelSave = (e: React.FormEvent) => {
     e.preventDefault()

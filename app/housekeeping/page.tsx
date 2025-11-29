@@ -6,8 +6,7 @@ import { TaskFilter, TaskFilters } from '@/components/housekeeping/task-filter'
 import { TaskModal } from '@/components/housekeeping/task-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, ClipboardList } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { mockHousekeepingTasks } from '@/lib/mock-data'
+import { useEffect, useMemo, useState } from 'react'
 import { HousekeepingTask } from '@/lib/types'
 
 // Mock staff members
@@ -24,7 +23,7 @@ const assigneeNames = staffMembers.reduce((acc, member) => {
 }, {} as Record<string, string>)
 
 export default function HousekeepingPage() {
-  const [tasks, setTasks] = useState<HousekeepingTask[]>(mockHousekeepingTasks)
+  const [tasks, setTasks] = useState<HousekeepingTask[]>([])
   const [filters, setFilters] = useState<TaskFilters>({
     search: '',
     status: 'all',
@@ -33,6 +32,22 @@ export default function HousekeepingPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<HousekeepingTask | undefined>()
+
+  useEffect(() => {
+    async function loadTasks() {
+      const response = await fetch('/api/housekeeping')
+      const data = await response.json()
+      setTasks(
+        (data.tasks || []).map((task: any) => ({
+          ...task,
+          createdAt: new Date(task.createdAt),
+          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+        })),
+      )
+    }
+
+    loadTasks()
+  }, [])
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {

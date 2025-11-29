@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { mockRooms } from '@/lib/mock-data'
+import { Room } from '@/lib/types'
 import { ArrowRight } from 'lucide-react'
 
 export default function ReservarPage() {
@@ -12,7 +12,19 @@ export default function ReservarPage() {
   const [guests, setGuests] = useState(1)
   const [showResults, setShowResults] = useState(false)
 
-  const availableRooms = mockRooms.filter(room => room.status === 'available')
+  const [rooms, setRooms] = useState<Room[]>([])
+
+  useEffect(() => {
+    async function loadRooms() {
+      const response = await fetch('/api/rooms')
+      const data = await response.json()
+      setRooms(data.rooms || [])
+    }
+
+    loadRooms()
+  }, [])
+
+  const availableRooms = rooms.filter(room => room.status === 'available')
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

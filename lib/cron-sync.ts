@@ -1,6 +1,6 @@
 import cron from 'node-cron'
 import { fetchAndParseIcal } from './ical-sync'
-import { airbnbSyncState } from './mock-data'
+import { airbnbSyncState } from './airbnb-state'
 
 export let syncSchedule: cron.ScheduledTask | null = null
 

@@ -6,12 +6,11 @@ import { InventoryFilter, InventoryFilters } from '@/components/inventory/invent
 import { InventoryModal } from '@/components/inventory/inventory-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, Package } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { mockInventory } from '@/lib/mock-data'
+import { useEffect, useMemo, useState } from 'react'
 import { InventoryItem } from '@/lib/types'
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>(mockInventory)
+  const [items, setItems] = useState<InventoryItem[]>([])
   const [filters, setFilters] = useState<InventoryFilters>({
     search: '',
     category: 'all',
@@ -19,6 +18,21 @@ export default function InventoryPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>()
+
+  useEffect(() => {
+    async function loadInventory() {
+      const response = await fetch('/api/inventory')
+      const data = await response.json()
+      const parsed = (data.items || []).map((item: any) => ({
+        ...item,
+        createdAt: new Date(item.createdAt),
+        lastRestocked: item.lastRestocked ? new Date(item.lastRestocked) : undefined,
+      }))
+      setItems(parsed)
+    }
+
+    loadInventory()
+  }, [])
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {

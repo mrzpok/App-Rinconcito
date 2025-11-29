@@ -1,5 +1,5 @@
 import { startAirbnbSyncSchedule } from './cron-sync'
-import { airbnbSyncState } from './mock-data'
+import { airbnbSyncState } from './airbnb-state'
 
 // Flag para evitar inicializar múltiples veces
 let syncInitialized = false

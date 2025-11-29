@@ -6,12 +6,11 @@ import { RoomFilter, RoomFilters } from '@/components/rooms/room-filter'
 import { RoomModal } from '@/components/rooms/room-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, BarChart3 } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { mockRooms } from '@/lib/mock-data'
+import { useEffect, useMemo, useState } from 'react'
 import { Room } from '@/lib/types'
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>(mockRooms)
+  const [rooms, setRooms] = useState<Room[]>([])
   const [filters, setFilters] = useState<RoomFilters>({
     search: '',
     status: 'all',
@@ -20,6 +19,16 @@ export default function RoomsPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState<Room | undefined>()
+
+  useEffect(() => {
+    async function loadRooms() {
+      const response = await fetch('/api/rooms')
+      const data = await response.json()
+      setRooms(data.rooms || [])
+    }
+
+    loadRooms()
+  }, [])
 
   const filteredRooms = useMemo(() => {
     return rooms.filter((room) => {
