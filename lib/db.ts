@@ -24,6 +24,14 @@ type DbData = {
   housekeeping_tasks: (HousekeepingTask & { createdAt: string; completedAt?: string })[]
   inventory: (InventoryItem & { createdAt: string })[]
   inventory_movements: (InventoryMovement & { createdAt: string })[]
+  airbnb: {
+    isConfigured: boolean
+    iCalUrl: string
+    lastSyncTime?: string
+    lastSyncStatus: 'nunca' | 'exitosa' | 'error'
+    lastError?: string
+    syncLogs: Array<{ timestamp: string; status: 'exitosa' | 'error'; message: string; eventCount: number }>
+  }
 }
 
 function loadData(): DbData {
@@ -36,6 +44,13 @@ function loadData(): DbData {
       housekeeping_tasks: [],
       inventory: [],
       inventory_movements: [],
+      airbnb: {
+        isConfigured: true,
+        iCalUrl:
+          'https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d',
+        lastSyncStatus: 'nunca',
+        syncLogs: [],
+      },
     }
   }
   const raw = fs.readFileSync(databasePath, 'utf8')
@@ -111,6 +126,17 @@ function seedIfNeeded() {
     updated = true
   }
 
+  if (!dbData.airbnb) {
+    dbData.airbnb = {
+      isConfigured: true,
+      iCalUrl:
+        'https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d',
+      lastSyncStatus: 'nunca',
+      syncLogs: [],
+    }
+    updated = true
+  }
+
   if (updated) saveData(dbData)
 }
 
@@ -136,7 +162,7 @@ function mapDate<
   if (record.checkOutDate) mapped.checkOutDate = new Date(record.checkOutDate)
   if (record.lastCleaned) mapped.lastCleaned = new Date(record.lastCleaned)
   if (record.completedAt) mapped.completedAt = new Date(record.completedAt)
-   if (record.lastRestocked) mapped.lastRestocked = new Date(record.lastRestocked)
+  if (record.lastRestocked) mapped.lastRestocked = new Date(record.lastRestocked)
   return mapped
 }
 
@@ -213,12 +239,51 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   }
 
   if (sql.startsWith('UPDATE housekeeping_tasks SET')) {
+    if (values.length === 9) {
+      const [roomId, assignedTo, status, taskType, priority, notes, photoUrl, completedAt, id] = values
+      const idx = dbData.housekeeping_tasks.findIndex((task) => task.id === id)
+      if (idx !== -1) {
+        dbData.housekeeping_tasks[idx] = {
+          ...dbData.housekeeping_tasks[idx],
+          roomId,
+          assignedTo,
+          status,
+          taskType,
+          priority,
+          notes,
+          photoUrl,
+          completedAt,
+        }
+        saveData(dbData)
+      }
+      return []
+    }
+
     const [status, photoUrl, completedAt, id] = values
     const idx = dbData.housekeeping_tasks.findIndex((task) => task.id === id)
     if (idx !== -1) {
       dbData.housekeeping_tasks[idx] = { ...dbData.housekeeping_tasks[idx], status, photoUrl, completedAt }
       saveData(dbData)
     }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO housekeeping_tasks')) {
+    const [id, hotelId, roomId, assignedTo, status, taskType, priority, notes, photoUrl, createdAt, completedAt] = values
+    dbData.housekeeping_tasks.push({
+      id,
+      hotelId,
+      roomId,
+      assignedTo,
+      status,
+      taskType,
+      priority,
+      notes,
+      photoUrl,
+      createdAt,
+      completedAt,
+    })
+    saveData(dbData)
     return []
   }
 
@@ -267,6 +332,118 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return []
   }
 
+  if (sql.startsWith('INSERT INTO rooms')) {
+    const [id, hotelId, roomNumber, type, status, floor, maxOccupancy, price, lastCleaned, createdAt] = values
+    dbData.rooms.push({
+      id,
+      hotelId,
+      roomNumber,
+      type,
+      status,
+      floor,
+      maxOccupancy,
+      price: Number(price),
+      lastCleaned,
+      createdAt,
+    })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE rooms SET')) {
+    const [roomNumber, type, status, floor, maxOccupancy, price, lastCleaned, id] = values
+    const idx = dbData.rooms.findIndex((room) => room.id === id)
+    if (idx !== -1) {
+      dbData.rooms[idx] = {
+        ...dbData.rooms[idx],
+        roomNumber,
+        type,
+        status,
+        floor,
+        maxOccupancy,
+        price: Number(price),
+        lastCleaned,
+      }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO reservations')) {
+    const [
+      id,
+      hotelId,
+      roomId,
+      guestName,
+      guestEmail,
+      guestPhone,
+      checkInDate,
+      checkOutDate,
+      status,
+      totalPrice,
+      numberOfGuests,
+      source,
+      notes,
+      createdAt,
+      updatedAt,
+    ] = values
+    dbData.reservations.push({
+      id,
+      hotelId,
+      roomId,
+      guestName,
+      guestEmail,
+      guestPhone,
+      checkInDate,
+      checkOutDate,
+      status,
+      totalPrice: Number(totalPrice),
+      numberOfGuests: Number(numberOfGuests),
+      source,
+      notes,
+      createdAt,
+      updatedAt,
+    })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE reservations SET')) {
+    const [
+      guestName,
+      guestEmail,
+      guestPhone,
+      checkInDate,
+      checkOutDate,
+      status,
+      totalPrice,
+      numberOfGuests,
+      source,
+      notes,
+      updatedAt,
+      id,
+    ] = values
+    const idx = dbData.reservations.findIndex((res) => res.id === id)
+    if (idx !== -1) {
+      dbData.reservations[idx] = {
+        ...dbData.reservations[idx],
+        guestName,
+        guestEmail,
+        guestPhone,
+        checkInDate,
+        checkOutDate,
+        status,
+        totalPrice: Number(totalPrice),
+        numberOfGuests: Number(numberOfGuests),
+        source,
+        notes,
+        updatedAt,
+      }
+      saveData(dbData)
+    }
+    return []
+  }
+
   return []
 }
 
@@ -295,5 +472,77 @@ export async function queryOne<T = any>(sql: string, values: any[] = []): Promis
     return (hotel ? mapDate(hotel) : null) as T | null
   }
 
+  if (sql.startsWith('SELECT * FROM airbnb_config')) {
+    return {
+      ...dbData.airbnb,
+      lastSyncTime: dbData.airbnb.lastSyncTime ? new Date(dbData.airbnb.lastSyncTime) : undefined,
+      syncLogs: dbData.airbnb.syncLogs.map((log) => ({ ...log, timestamp: new Date(log.timestamp) })),
+    } as T
+  }
+
   return null
+}
+
+export function upsertReservationFromIcal(event: {
+  uid: string
+  summary: string
+  guestName?: string
+  guestEmail?: string
+  startDate: Date
+  endDate: Date
+}) {
+  const existing = dbData.reservations.find((res) => res.id === event.uid)
+  const now = new Date().toISOString()
+
+  if (existing) {
+    dbData.reservations = dbData.reservations.map((res) =>
+      res.id === event.uid
+        ? {
+            ...res,
+            checkInDate: event.startDate.toISOString(),
+            checkOutDate: event.endDate.toISOString(),
+            guestName: event.guestName || res.guestName || event.summary,
+            guestEmail: event.guestEmail || res.guestEmail,
+            source: 'airbnb',
+            updatedAt: now,
+          }
+        : res,
+    )
+  } else {
+    dbData.reservations.push({
+      id: event.uid,
+      hotelId: '1',
+      roomId: '1',
+      guestName: event.guestName || event.summary || 'Reserva Airbnb',
+      guestEmail: event.guestEmail || '',
+      guestPhone: '',
+      checkInDate: event.startDate.toISOString(),
+      checkOutDate: event.endDate.toISOString(),
+      status: 'confirmed',
+      totalPrice: 0,
+      numberOfGuests: 1,
+      source: 'airbnb',
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  saveData(dbData)
+}
+
+export function getAirbnbState() {
+  return {
+    ...dbData.airbnb,
+    lastSyncTime: dbData.airbnb.lastSyncTime ? new Date(dbData.airbnb.lastSyncTime) : undefined,
+    syncLogs: dbData.airbnb.syncLogs.map((log) => ({ ...log, timestamp: new Date(log.timestamp) })),
+  }
+}
+
+export function updateAirbnbState(partial: Partial<DbData['airbnb']>) {
+  dbData.airbnb = {
+    ...dbData.airbnb,
+    ...partial,
+  }
+  saveData(dbData)
+  return getAirbnbState()
 }

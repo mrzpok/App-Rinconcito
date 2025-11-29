@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { fetchAndParseIcal } from './ical-sync'
-import { airbnbSyncState } from './airbnb-state'
+import { airbnbSyncState, persistAirbnbState } from './airbnb-state'
+import { upsertReservationFromIcal } from './db'
 
 export let syncSchedule: cron.ScheduledTask | null = null
 
@@ -35,9 +36,11 @@ async function performAirbnbSync(iCalUrl: string) {
 
   try {
     console.log('[v0] Iniciando sincronización de Airbnb...')
-    
+
     const events = await fetchAndParseIcal(iCalUrl)
-    
+
+    events.forEach((event) => upsertReservationFromIcal(event))
+
     airbnbSyncState.lastSyncTime = new Date()
     airbnbSyncState.lastSyncStatus = 'exitosa'
     airbnbSyncState.lastError = ''
@@ -49,6 +52,8 @@ async function performAirbnbSync(iCalUrl: string) {
       message: `${events.length} eventos sincronizados`,
       eventCount: events.length,
     })
+
+    persistAirbnbState()
 
     // Mantener solo los últimos 50 logs
     if (airbnbSyncState.syncLogs.length > 50) {
@@ -69,6 +74,8 @@ async function performAirbnbSync(iCalUrl: string) {
       message: errorMessage,
       eventCount: 0,
     })
+
+    persistAirbnbState()
 
     console.error('[v0] Error en sincronización de Airbnb:', errorMessage)
   } finally {

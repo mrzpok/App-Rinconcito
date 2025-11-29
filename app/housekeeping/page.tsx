@@ -71,25 +71,49 @@ export default function HousekeepingPage() {
     setIsModalOpen(true)
   }
 
-  const handleSaveTask = (updatedTask: HousekeepingTask) => {
+  const handleSaveTask = async (updatedTask: HousekeepingTask) => {
     if (selectedTask) {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-      )
+      setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)))
+      await fetch('/api/housekeeping', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      })
     } else {
-      setTasks((prev) => [...prev, { ...updatedTask, id: Date.now().toString(), createdAt: new Date() }])
+      const response = await fetch('/api/housekeeping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      })
+      const data = await response.json()
+      const saved = data.task
+      setTasks((prev) => [
+        ...prev,
+        {
+          ...saved,
+          createdAt: new Date(saved.createdAt),
+          completedAt: saved.completedAt ? new Date(saved.completedAt) : undefined,
+        },
+      ])
     }
     setSelectedTask(undefined)
   }
 
-  const handleStatusChange = (taskId: string, newStatus: HousekeepingTask['status']) => {
+  const handleStatusChange = async (taskId: string, newStatus: HousekeepingTask['status']) => {
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId 
-          ? { ...t, status: newStatus, completedAt: newStatus === 'completed' ? new Date() : undefined } 
-          : t
-      )
+        t.id === taskId
+          ? { ...t, status: newStatus, completedAt: newStatus === 'completed' ? new Date() : undefined }
+          : t,
+      ),
     )
+
+    const currentTask = tasks.find((t) => t.id === taskId)
+    await fetch('/api/housekeeping', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...currentTask, status: newStatus }),
+    })
   }
 
   const handleAddTask = () => {
@@ -116,12 +140,12 @@ export default function HousekeepingPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Housekeeping Tasks</h1>
-              <p className="text-muted-foreground">Manage cleaning and maintenance assignments</p>
+              <h1 className="text-3xl font-bold text-foreground">Tareas de limpieza</h1>
+              <p className="text-muted-foreground">Asigna, registra y cierra las tareas de housekeeping</p>
             </div>
             <Button className="gap-2 w-full sm:w-auto" onClick={handleAddTask}>
               <Plus size={18} />
-              New Task
+              Nueva tarea
             </Button>
           </div>
 
@@ -133,23 +157,23 @@ export default function HousekeepingPage() {
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-muted-foreground">{stats.pending}</p>
-              <p className="text-xs text-muted-foreground mt-1">Pending</p>
+              <p className="text-xs text-muted-foreground mt-1">Pendientes</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
-              <p className="text-xs text-muted-foreground mt-1">In Progress</p>
+              <p className="text-xs text-muted-foreground mt-1">En progreso</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-accent">{stats.completed}</p>
-              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+              <p className="text-xs text-muted-foreground mt-1">Completadas</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{stats.blocked}</p>
-              <p className="text-xs text-muted-foreground mt-1">Blocked</p>
+              <p className="text-xs text-muted-foreground mt-1">Bloqueadas</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{stats.highPriority}</p>
-              <p className="text-xs text-muted-foreground mt-1">High Priority</p>
+              <p className="text-xs text-muted-foreground mt-1">Prioridad alta</p>
             </div>
           </div>
 
@@ -162,7 +186,7 @@ export default function HousekeepingPage() {
           {filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardList size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-              <p className="text-muted-foreground">No tasks found matching your filters</p>
+              <p className="text-muted-foreground">No hay tareas que coincidan con los filtros</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
