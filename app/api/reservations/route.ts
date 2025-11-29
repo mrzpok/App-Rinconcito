@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import db from '@/lib/db'
+import { query } from '@/lib/db'
 import { Reservation } from '@/lib/types'
 
 function mapReservation(row: any): Reservation {
@@ -13,9 +13,8 @@ function mapReservation(row: any): Reservation {
 }
 
 export async function GET() {
-  const statement = db.prepare(
+  const rows = await query<Reservation>(
     'SELECT id, hotelId, roomId, guestName, guestEmail, guestPhone, checkInDate, checkOutDate, status, totalPrice, numberOfGuests, source, createdAt, updatedAt FROM reservations ORDER BY checkInDate DESC',
   )
-  const rows = statement.all()
   return NextResponse.json({ reservations: rows.map(mapReservation) })
 }

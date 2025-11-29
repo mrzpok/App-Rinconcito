@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import db from '@/lib/db'
+import { query } from '@/lib/db'
 import { Hotel } from '@/lib/types'
 
 function mapHotel(row: any): Hotel {
@@ -10,9 +10,6 @@ function mapHotel(row: any): Hotel {
 }
 
 export async function GET() {
-  const statement = db.prepare(
-    'SELECT id, name, address, city, country, phone, email, totalRooms, createdAt FROM hotels LIMIT 1',
-  )
-  const hotel = statement.get()
+  const [hotel] = await query<Hotel>('SELECT id, name, address, city, country, phone, email, totalRooms, createdAt FROM hotels LIMIT 1')
   return NextResponse.json({ hotel: hotel ? mapHotel(hotel) : null })
 }

@@ -1,7 +1,6 @@
 import 'server-only'
 import fs from 'node:fs'
 import path from 'node:path'
-import Database from 'better-sqlite3'
 import {
   seedHotel,
   seedHousekeepingTasks,
@@ -12,224 +11,208 @@ import {
   seedCollaborators,
   seedUser,
 } from './seed-data'
+import { Hotel, HousekeepingTask, InventoryItem, InventoryMovement, Reservation, Room, User } from './types'
 
-const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.db')
+const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.json')
 fs.mkdirSync(path.dirname(databasePath), { recursive: true })
 
-const db = new Database(databasePath)
-db.exec('PRAGMA foreign_keys = ON;')
-// Improve concurrent reads during build/runtime and avoid lock errors when multiple
-// workers initialize the module at once.
-db.exec('PRAGMA journal_mode = WAL;')
-db.exec('PRAGMA busy_timeout = 5000;')
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS hotels (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    address TEXT,
-    city TEXT,
-    country TEXT,
-    phone TEXT,
-    email TEXT,
-    totalRooms INTEGER,
-    createdAt TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    name TEXT NOT NULL,
-    password TEXT,
-    role TEXT NOT NULL,
-    hotelId TEXT NOT NULL,
-    active INTEGER DEFAULT 1,
-    createdAt TEXT
-  );
-
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
-  CREATE TABLE IF NOT EXISTS rooms (
-    id TEXT PRIMARY KEY,
-    hotelId TEXT NOT NULL,
-    roomNumber TEXT NOT NULL,
-    type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    floor INTEGER,
-    maxOccupancy INTEGER,
-    price INTEGER,
-    lastCleaned TEXT,
-    createdAt TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS reservations (
-    id TEXT PRIMARY KEY,
-    hotelId TEXT NOT NULL,
-    roomId TEXT NOT NULL,
-    guestName TEXT,
-    guestEmail TEXT,
-    guestPhone TEXT,
-    checkInDate TEXT,
-    checkOutDate TEXT,
-    status TEXT,
-    totalPrice INTEGER,
-    numberOfGuests INTEGER,
-    source TEXT,
-    createdAt TEXT,
-    updatedAt TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS housekeeping_tasks (
-    id TEXT PRIMARY KEY,
-    hotelId TEXT NOT NULL,
-    roomId TEXT NOT NULL,
-    assignedTo TEXT,
-    status TEXT,
-    taskType TEXT,
-    priority TEXT,
-    photoUrl TEXT,
-    completedAt TEXT,
-    createdAt TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS inventory (
-    id TEXT PRIMARY KEY,
-    hotelId TEXT NOT NULL,
-    name TEXT,
-    category TEXT,
-    quantity INTEGER,
-    minimumLevel INTEGER,
-    unit TEXT,
-    location TEXT,
-    createdAt TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS inventory_movements (
-    id TEXT PRIMARY KEY,
-    itemId TEXT NOT NULL,
-    userId TEXT NOT NULL,
-    change INTEGER NOT NULL,
-    reason TEXT NOT NULL,
-    locationFrom TEXT,
-    locationTo TEXT,
-    createdAt TEXT
-  );
-`)
-
-const count = (table: string) => {
-  const statement = db.prepare(`SELECT COUNT(*) as count FROM ${table}`)
-  const result = statement.get() as { count: number }
-  return result?.count || 0
+type DbData = {
+  hotels: (Hotel & { createdAt: string })[]
+  users: (User & { createdAt: string; active: number })[]
+  rooms: (Room & { createdAt: string; lastCleaned?: string })[]
+  reservations: (Reservation & { createdAt: string; updatedAt: string; checkInDate: string; checkOutDate: string })[]
+  housekeeping_tasks: (HousekeepingTask & { createdAt: string; completedAt?: string })[]
+  inventory: (InventoryItem & { createdAt: string })[]
+  inventory_movements: (InventoryMovement & { createdAt: string })[]
 }
 
-if (count('hotels') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO hotels (id, name, address, city, country, phone, email, totalRooms, createdAt)
-     VALUES (@id, @name, @address, @city, @country, @phone, @email, @totalRooms, @createdAt)`,
-  )
-  insert.run({ ...seedHotel, createdAt: seedHotel.createdAt.toISOString() })
+function loadData(): DbData {
+  if (!fs.existsSync(databasePath)) {
+    return {
+      hotels: [],
+      users: [],
+      rooms: [],
+      reservations: [],
+      housekeeping_tasks: [],
+      inventory: [],
+      inventory_movements: [],
+    }
+  }
+  const raw = fs.readFileSync(databasePath, 'utf8')
+  return JSON.parse(raw) as DbData
 }
 
-const insertUser = db.prepare(
-  `INSERT INTO users (id, email, name, password, role, hotelId, active, createdAt)
-   VALUES (@id, @email, @name, @password, @role, @hotelId, @active, @createdAt)
-   ON CONFLICT(email) DO UPDATE SET
-     password=excluded.password,
-     role=excluded.role,
-     active=excluded.active`,
-)
+function saveData(data: DbData) {
+  fs.writeFileSync(databasePath, JSON.stringify(data, null, 2))
+}
 
-if (count('users') === 0) {
-  insertUser.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
+let dbData = loadData()
+
+function seedIfNeeded() {
+  let updated = false
+
+  if (dbData.hotels.length === 0) {
+    dbData.hotels.push({ ...seedHotel, createdAt: seedHotel.createdAt.toISOString() })
+    updated = true
+  }
+
+  const existingUsers = new Set(dbData.users.map((u) => u.email))
+  if (!existingUsers.has(seedUser.email)) {
+    dbData.users.push({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
+    updated = true
+  }
   for (const collaborator of seedCollaborators) {
-    insertUser.run({ ...collaborator, active: collaborator.active ? 1 : 0, createdAt: collaborator.createdAt.toISOString() })
+    if (!existingUsers.has(collaborator.email)) {
+      dbData.users.push({ ...collaborator, active: collaborator.active ? 1 : 0, createdAt: collaborator.createdAt.toISOString() })
+      updated = true
+    }
   }
-} else {
-  insertUser.run({ ...seedUser, active: seedUser.active ? 1 : 0, createdAt: seedUser.createdAt.toISOString() })
+
+  if (dbData.rooms.length === 0) {
+    dbData.rooms.push(
+      ...seedRooms.map((room) => ({
+        ...room,
+        createdAt: room.createdAt.toISOString(),
+        lastCleaned: room.lastCleaned?.toISOString(),
+      })),
+    )
+    updated = true
+  }
+
+  if (dbData.reservations.length === 0) {
+    dbData.reservations.push(
+      ...seedReservations.map((reservation) => ({
+        ...reservation,
+        createdAt: reservation.createdAt.toISOString(),
+        updatedAt: reservation.updatedAt.toISOString(),
+        checkInDate: reservation.checkInDate.toISOString(),
+        checkOutDate: reservation.checkOutDate.toISOString(),
+      })),
+    )
+    updated = true
+  }
+
+  if (dbData.housekeeping_tasks.length === 0) {
+    dbData.housekeeping_tasks.push(
+      ...seedHousekeepingTasks.map((task) => ({ ...task, createdAt: task.createdAt.toISOString() })),
+    )
+    updated = true
+  }
+
+  if (dbData.inventory.length === 0) {
+    dbData.inventory.push(...seedInventory.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })))
+    updated = true
+  }
+
+  if (dbData.inventory_movements.length === 0) {
+    dbData.inventory_movements.push(
+      ...seedInventoryMovements.map((movement) => ({ ...movement, createdAt: movement.createdAt.toISOString() })),
+    )
+    updated = true
+  }
+
+  if (updated) saveData(dbData)
 }
 
-if (count('rooms') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO rooms (id, hotelId, roomNumber, type, status, floor, maxOccupancy, price, lastCleaned, createdAt)
-     VALUES (@id, @hotelId, @roomNumber, @type, @status, @floor, @maxOccupancy, @price, @lastCleaned, @createdAt)`,
-  )
-  for (const room of seedRooms) {
-    insert.run({
-      ...room,
-      lastCleaned: room.lastCleaned.toISOString(),
-      createdAt: room.createdAt.toISOString(),
-    })
-  }
-}
+seedIfNeeded()
 
-if (count('reservations') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO reservations (
-      id, hotelId, roomId, guestName, guestEmail, guestPhone, checkInDate, checkOutDate,
-      status, totalPrice, numberOfGuests, source, createdAt, updatedAt)
-     VALUES (
-      @id, @hotelId, @roomId, @guestName, @guestEmail, @guestPhone, @checkInDate, @checkOutDate,
-      @status, @totalPrice, @numberOfGuests, @source, @createdAt, @updatedAt
-    )`,
-  )
-  for (const reservation of seedReservations) {
-    insert.run({
-      ...reservation,
-      checkInDate: reservation.checkInDate.toISOString(),
-      checkOutDate: reservation.checkOutDate.toISOString(),
-      createdAt: reservation.createdAt.toISOString(),
-      updatedAt: reservation.updatedAt.toISOString(),
-    })
-  }
-}
-
-if (count('housekeeping_tasks') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO housekeeping_tasks (id, hotelId, roomId, assignedTo, status, taskType, priority, createdAt)
-     VALUES (@id, @hotelId, @roomId, @assignedTo, @status, @taskType, @priority, @createdAt)`,
-  )
-  for (const task of seedHousekeepingTasks) {
-    insert.run({ ...task, createdAt: task.createdAt.toISOString() })
-  }
-}
-
-if (count('inventory') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, location, createdAt)
-     VALUES (@id, @hotelId, @name, @category, @quantity, @minimumLevel, @unit, @location, @createdAt)`,
-  )
-  for (const item of seedInventory) {
-    insert.run({ ...item, createdAt: item.createdAt.toISOString() })
-  }
-}
-
-if (count('inventory_movements') === 0) {
-  const insert = db.prepare(
-    `INSERT INTO inventory_movements (id, itemId, userId, change, reason, locationFrom, locationTo, createdAt)
-     VALUES (@id, @itemId, @userId, @change, @reason, @locationFrom, @locationTo, @createdAt)`,
-  )
-  for (const movement of seedInventoryMovements) {
-    insert.run({ ...movement, createdAt: movement.createdAt.toISOString() })
-  }
-}
-
-function isSelect(sql: string) {
-  return sql.trim().toLowerCase().startsWith('select')
+function mapDate<T extends { createdAt?: string; updatedAt?: string; checkInDate?: string; checkOutDate?: string; lastCleaned?: string; completedAt?: string }>(
+  record: T,
+) {
+  const mapped: any = { ...record }
+  if (record.createdAt) mapped.createdAt = new Date(record.createdAt)
+  if (record.updatedAt) mapped.updatedAt = new Date(record.updatedAt)
+  if (record.checkInDate) mapped.checkInDate = new Date(record.checkInDate)
+  if (record.checkOutDate) mapped.checkOutDate = new Date(record.checkOutDate)
+  if (record.lastCleaned) mapped.lastCleaned = new Date(record.lastCleaned)
+  if (record.completedAt) mapped.completedAt = new Date(record.completedAt)
+  return mapped
 }
 
 export async function query<T = any>(sql: string, values: any[] = []): Promise<T[]> {
-  const statement = db.prepare(sql)
-  if (isSelect(sql)) {
-    return statement.all(values) as T[]
+  // Reads use in-memory data; updates persist to disk
+  if (sql.startsWith('SELECT * FROM rooms')) {
+    return [...dbData.rooms]
+      .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber))
+      .map((room) => mapDate(room)) as T[]
   }
-  statement.run(values)
+
+  if (sql.startsWith('SELECT id, hotelId, roomId, guestName')) {
+    return [...dbData.reservations]
+      .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
+      .map((reservation) => mapDate(reservation)) as T[]
+  }
+
+  if (sql.startsWith('SELECT id, hotelId, name')) {
+    return [...dbData.inventory]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((item) => mapDate(item)) as T[]
+  }
+
+  if (sql.startsWith('SELECT id, hotelId, roomId, assignedTo')) {
+    return [...dbData.housekeeping_tasks]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((task) => mapDate(task)) as T[]
+  }
+
+  if (sql.startsWith('UPDATE inventory SET')) {
+    const [quantity, location, id] = values
+    const idx = dbData.inventory.findIndex((item) => item.id === id)
+    if (idx !== -1) {
+      dbData.inventory[idx] = { ...dbData.inventory[idx], quantity: Number(quantity), location }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO inventory_movements')) {
+    const [id, itemId, userId, change, reason, locationFrom, locationTo, createdAt] = values
+    dbData.inventory_movements.push({
+      id,
+      itemId,
+      userId,
+      change: Number(change),
+      reason,
+      locationFrom,
+      locationTo,
+      createdAt,
+    })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE housekeeping_tasks SET')) {
+    const [status, photoUrl, completedAt, id] = values
+    const idx = dbData.housekeeping_tasks.findIndex((task) => task.id === id)
+    if (idx !== -1) {
+      dbData.housekeeping_tasks[idx] = { ...dbData.housekeeping_tasks[idx], status, photoUrl, completedAt }
+      saveData(dbData)
+    }
+    return []
+  }
+
   return []
 }
 
 export async function queryOne<T = any>(sql: string, values: any[] = []): Promise<T | null> {
-  const statement = db.prepare(sql)
-  const result = statement.get(values) as T | undefined
-  return result ?? null
-}
+  if (sql.startsWith('SELECT id, email, name, password')) {
+    const email = values[0]
+    const user = dbData.users.find((u) => u.email === email && u.active)
+    return (user ? mapDate(user) : null) as T | null
+  }
 
-export default db
+  if (sql.startsWith('SELECT * FROM inventory WHERE id = ?')) {
+    const id = values[0]
+    const item = dbData.inventory.find((entry) => entry.id === id)
+    return (item ? mapDate(item) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT id, hotelId, roomNumber')) {
+    // Room lookup by ID
+    const id = values[0]
+    const room = dbData.rooms.find((r) => r.id === id)
+    return (room ? mapDate(room) : null) as T | null
+  }
+
+  return null
+}
