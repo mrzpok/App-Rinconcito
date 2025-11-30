@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'colaborador' })
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [editUser, setEditUser] = useState({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
+  const [loadError, setLoadError] = useState('')
   const [newRole, setNewRole] = useState({
     name: '',
     canManageRooms: false,
@@ -36,12 +37,27 @@ export default function AdminPage() {
     async function loadUsers() {
       if (!user || user.role !== 'super-admin') return
       setLoadingUsers(true)
-      const [usersRes, rolesRes] = await Promise.all([fetch('/api/users'), fetch('/api/roles')])
-      const dataUsers = await usersRes.json()
-      const dataRoles = await rolesRes.json()
-      setUsers((dataUsers.users || []).map((u: any) => ({ ...u, createdAt: new Date(u.createdAt) })) as User[])
-      setRoles((dataRoles.roles || []).map((r: any) => ({ ...r, createdAt: new Date(r.createdAt) })) as RolePermission[])
-      setLoadingUsers(false)
+      setLoadError('')
+      try {
+        const [usersRes, rolesRes] = await Promise.all([fetch('/api/users'), fetch('/api/roles')])
+        if (!usersRes.ok || !rolesRes.ok) {
+          const message =
+            usersRes.status === 403 || rolesRes.status === 403
+              ? 'Solo el super administrador puede consultar usuarios y roles.'
+              : 'No se pudieron cargar los usuarios. Revisa tu sesión y vuelve a intentar.'
+          setLoadError(message)
+          return
+        }
+        const dataUsers = await usersRes.json()
+        const dataRoles = await rolesRes.json()
+        setUsers((dataUsers.users || []).map((u: any) => ({ ...u, createdAt: new Date(u.createdAt) })) as User[])
+        setRoles((dataRoles.roles || []).map((r: any) => ({ ...r, createdAt: new Date(r.createdAt) })) as RolePermission[])
+      } catch (error) {
+        console.error('Error cargando usuarios:', error)
+        setLoadError('Error de conexión al cargar usuarios y roles. Verifica que estés logueado como super admin.')
+      } finally {
+        setLoadingUsers(false)
+      }
     }
 
     loadUsers()
@@ -142,6 +158,13 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {loadError && !loadingUsers && (
+                    <tr>
+                      <td className="p-3 text-red-600" colSpan={5}>
+                        {loadError}
+                      </td>
+                    </tr>
+                  )}
                   {loadingUsers && (
                     <tr>
                       <td className="p-3" colSpan={5}>
