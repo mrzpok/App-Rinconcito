@@ -526,10 +526,24 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   }
 
   if (sql.startsWith('UPDATE users SET')) {
-    const [name, role, active, id] = values
+    const hasPassword = sql.includes('password = ?')
+    const name = values[0]
+    const role = values[1]
+    const active = values[2]
+    const email = values[3]
+    const password = hasPassword ? values[4] : undefined
+    const id = hasPassword ? values[5] : values[4]
+
     const idx = dbData.users.findIndex((u) => u.id === id)
     if (idx !== -1) {
-      dbData.users[idx] = { ...dbData.users[idx], name, role, active }
+      dbData.users[idx] = {
+        ...dbData.users[idx],
+        name,
+        role,
+        active,
+        email,
+        ...(password ? { password } : {}),
+      }
       saveData(dbData)
     }
     return []

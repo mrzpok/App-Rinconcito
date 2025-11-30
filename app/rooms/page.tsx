@@ -25,7 +25,7 @@ export default function RoomsPage() {
   const canDeleteRooms = user?.role === 'super-admin'
 
   const loadRooms = async () => {
-    const response = await fetch('/api/rooms')
+    const response = await fetch('/api/rooms', { credentials: 'include' })
     const data = await response.json()
     const parsed = (data.rooms || []).map((room: any) => ({
       ...room,
@@ -71,6 +71,7 @@ export default function RoomsPage() {
     const response = await fetch('/api/rooms', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     })
     const data = await response.json()
@@ -97,6 +98,7 @@ export default function RoomsPage() {
     await fetch('/api/rooms', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ ...room, status: newStatus, lastCleaned }),
     })
 
@@ -124,6 +126,7 @@ export default function RoomsPage() {
     const response = await fetch('/api/rooms', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ id: roomId }),
     })
 

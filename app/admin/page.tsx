@@ -39,7 +39,10 @@ export default function AdminPage() {
       setLoadingUsers(true)
       setLoadError('')
       try {
-        const [usersRes, rolesRes] = await Promise.all([fetch('/api/users'), fetch('/api/roles')])
+        const [usersRes, rolesRes] = await Promise.all([
+          fetch('/api/users', { credentials: 'include' }),
+          fetch('/api/roles', { credentials: 'include' }),
+        ])
         if (!usersRes.ok || !rolesRes.ok) {
           const message =
             usersRes.status === 403 || rolesRes.status === 403
@@ -71,6 +74,7 @@ export default function AdminPage() {
     const response = await fetch('/api/users', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
         id,
         name: payload.name,
@@ -277,6 +281,7 @@ export default function AdminPage() {
                   const response = await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ ...newUser }),
                   })
                   const data = await response.json()
@@ -355,6 +360,7 @@ export default function AdminPage() {
                     await fetch('/api/users', {
                       method: 'DELETE',
                       headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
                       body: JSON.stringify({ id: selectedUserId }),
                     })
                     setUsers((prev) => prev.filter((u) => u.id !== selectedUserId))
@@ -386,6 +392,7 @@ export default function AdminPage() {
                         await fetch('/api/roles', {
                           method: 'DELETE',
                           headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
                           body: JSON.stringify({ id: role.id }),
                         })
                         setRoles((prev) => prev.filter((r) => r.id !== role.id))
@@ -411,6 +418,7 @@ export default function AdminPage() {
                             await fetch('/api/roles', {
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
                               body: JSON.stringify(updated),
                             })
                             setRoles((prev) => prev.map((r) => (r.id === role.id ? updated : r)))
@@ -456,6 +464,7 @@ export default function AdminPage() {
                   const response = await fetch('/api/roles', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(newRole),
                   })
                   const data = await response.json()
