@@ -168,34 +168,38 @@ function mapDate<
 
 export async function query<T = any>(sql: string, values: any[] = []): Promise<T[]> {
   // Reads use in-memory data; updates persist to disk
-  if (sql.startsWith('SELECT * FROM rooms')) {
+  if (sql.includes('FROM rooms')) {
     return [...dbData.rooms]
       .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber))
       .map((room) => mapDate(room)) as T[]
   }
 
-  if (sql.startsWith('SELECT id, hotelId, roomId, guestName')) {
+  if (sql.includes('FROM reservations')) {
     return [...dbData.reservations]
       .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
       .map((reservation) => mapDate(reservation)) as T[]
   }
 
-  if (sql.startsWith('SELECT id, hotelId, name')) {
+  if (sql.includes('FROM inventory')) {
     return [...dbData.inventory]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((item) => mapDate(item)) as T[]
   }
 
-  if (sql.startsWith('SELECT id, hotelId, roomId, assignedTo')) {
+  if (sql.includes('FROM housekeeping_tasks')) {
     return [...dbData.housekeeping_tasks]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((task) => mapDate(task)) as T[]
   }
 
-  if (sql.startsWith('SELECT id, email, name, role, hotelId')) {
+  if (sql.includes('FROM users')) {
     return [...dbData.users]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((user) => ({ ...mapDate(user), active: Boolean(user.active) })) as T[]
+  }
+
+  if (sql.includes('FROM hotels')) {
+    return dbData.hotels.map((hotel) => mapDate(hotel)) as T[]
   }
 
   if (sql.startsWith('UPDATE inventory SET')) {
