@@ -24,18 +24,18 @@ export default function RoomsPage() {
   const canManageRooms = user?.role === 'super-admin' || user?.role === 'housekeeper'
   const canDeleteRooms = user?.role === 'super-admin'
 
-  useEffect(() => {
-    async function loadRooms() {
-      const response = await fetch('/api/rooms')
-      const data = await response.json()
-      const parsed = (data.rooms || []).map((room: any) => ({
-        ...room,
-        createdAt: new Date(room.createdAt),
-        lastCleaned: room.lastCleaned ? new Date(room.lastCleaned) : undefined,
-      }))
-      setRooms(parsed)
-    }
+  const loadRooms = async () => {
+    const response = await fetch('/api/rooms')
+    const data = await response.json()
+    const parsed = (data.rooms || []).map((room: any) => ({
+      ...room,
+      createdAt: new Date(room.createdAt),
+      lastCleaned: room.lastCleaned ? new Date(room.lastCleaned) : undefined,
+    }))
+    setRooms(parsed)
+  }
 
+  useEffect(() => {
     loadRooms()
   }, [])
 
@@ -121,12 +121,18 @@ export default function RoomsPage() {
       alert('Solo el super administrador puede eliminar habitaciones')
       return
     }
-    await fetch('/api/rooms', {
+    const response = await fetch('/api/rooms', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: roomId }),
     })
-    setRooms((prev) => prev.filter((room) => room.id !== roomId))
+
+    if (!response.ok) {
+      alert('No se pudo eliminar la habitación. Verifica tus permisos o intenta de nuevo.')
+      return
+    }
+
+    await loadRooms()
   }
 
   // Statistics

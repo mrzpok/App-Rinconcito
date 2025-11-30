@@ -14,6 +14,8 @@ export default function AdminPage() {
   const [roles, setRoles] = useState<RolePermission[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'colaborador' })
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [editUser, setEditUser] = useState({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
   const [newRole, setNewRole] = useState({
     name: '',
     canManageRooms: false,
@@ -53,11 +55,28 @@ export default function AdminPage() {
     const response = await fetch('/api/users', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name: payload.name, role: payload.role, active: payload.active }),
+      body: JSON.stringify({
+        id,
+        name: payload.name,
+        email: payload.email,
+        role: payload.role,
+        active: payload.active,
+        password: (partial as any).password,
+      }),
     })
     const data = await response.json()
     if (data.user) {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...data.user, createdAt: new Date(data.user.createdAt) } : u)))
+      if (selectedUserId === id) {
+        setEditUser({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          active: data.user.active,
+          password: '',
+        })
+      }
     }
   }
 
@@ -131,7 +150,21 @@ export default function AdminPage() {
                     </tr>
                   )}
                   {users.map((u) => (
-                    <tr key={u.id} className="border-t">
+                    <tr
+                      key={u.id}
+                      className={`border-t cursor-pointer ${selectedUserId === u.id ? 'bg-sky-50' : ''}`}
+                      onClick={() => {
+                        setSelectedUserId(u.id)
+                        setEditUser({
+                          id: u.id,
+                          name: u.name,
+                          email: u.email,
+                          role: u.role,
+                          active: u.active,
+                          password: '',
+                        })
+                      }}
+                    >
                       <td className="p-3 font-semibold">{u.name}</td>
                       <td className="p-3 text-muted-foreground">{u.email}</td>
                       <td className="p-3">
@@ -168,6 +201,10 @@ export default function AdminPage() {
                               body: JSON.stringify({ id: u.id }),
                             })
                             setUsers((prev) => prev.filter((userRow) => userRow.id !== u.id))
+                            if (selectedUserId === u.id) {
+                              setSelectedUserId(null)
+                              setEditUser({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
+                            }
                           }}
                         >
                           Borrar
@@ -228,6 +265,83 @@ export default function AdminPage() {
               >
                 Guardar usuario
               </Button>
+            </div>
+            <div className="border border-border rounded-lg p-4 bg-white space-y-3">
+              <h3 className="font-semibold">Editar usuario</h3>
+              <p className="text-xs text-muted-foreground">Selecciona un usuario en la tabla para habilitar la edición.</p>
+              <input
+                className="border rounded-md px-3 py-2 w-full"
+                placeholder="Nombre"
+                value={editUser.name}
+                onChange={(e) => setEditUser((prev) => ({ ...prev, name: e.target.value }))}
+                disabled={!selectedUserId}
+              />
+              <input
+                className="border rounded-md px-3 py-2 w-full"
+                placeholder="Correo"
+                value={editUser.email}
+                onChange={(e) => setEditUser((prev) => ({ ...prev, email: e.target.value }))}
+                disabled={!selectedUserId}
+              />
+              <input
+                className="border rounded-md px-3 py-2 w-full"
+                placeholder="Nueva contraseña (opcional)"
+                type="password"
+                value={editUser.password}
+                onChange={(e) => setEditUser((prev) => ({ ...prev, password: e.target.value }))}
+                disabled={!selectedUserId}
+              />
+              <select
+                className="border rounded-md px-3 py-2 w-full"
+                value={editUser.role}
+                onChange={(e) => setEditUser((prev) => ({ ...prev, role: e.target.value }))}
+                disabled={!selectedUserId}
+              >
+                {roleOptions.map((role) => (
+                  <option key={role.id} value={role.name || role.id}>
+                    {role.name || role.id}
+                  </option>
+                ))}
+              </select>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editUser.active}
+                  onChange={(e) => setEditUser((prev) => ({ ...prev, active: e.target.checked }))}
+                  disabled={!selectedUserId}
+                />
+                Activo
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  disabled={!selectedUserId}
+                  onClick={() => {
+                    if (!selectedUserId) return
+                    updateUser(selectedUserId, editUser)
+                  }}
+                >
+                  Guardar cambios
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={!selectedUserId}
+                  onClick={async () => {
+                    if (!selectedUserId) return
+                    await fetch('/api/users', {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: selectedUserId }),
+                    })
+                    setUsers((prev) => prev.filter((u) => u.id !== selectedUserId))
+                    setSelectedUserId(null)
+                    setEditUser({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
+                  }}
+                >
+                  Eliminar usuario
+                </Button>
+              </div>
             </div>
           </div>
 
