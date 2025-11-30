@@ -37,7 +37,7 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, on
     setNewQuantity(item.quantity)
   }, [item.quantity])
 
-  const canAdjustStock = role === 'super-admin' || role === 'housekeeper'
+  const canAdjustStock = role === 'super-admin'
   const canManageItem = role === 'super-admin'
   const canUseOne = role === 'colaborador'
 

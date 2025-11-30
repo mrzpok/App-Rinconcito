@@ -85,7 +85,16 @@ export interface HousekeepingTask {
   notes?: string;
   createdAt: Date;
   completedAt?: Date;
+  completedBy?: string;
   photoUrl?: string;
+}
+
+export interface HousekeepingCompletion {
+  id: string;
+  taskId: string;
+  roomId: string;
+  completedBy: string;
+  completedAt: Date;
 }
 
 export interface InventoryItem {

@@ -13,6 +13,7 @@ const navItems = [
   { href: '/rooms', label: 'Habitaciones', icon: Door },
   { href: '/housekeeping', label: 'Limpieza', icon: Broom },
   { href: '/inventory', label: 'Inventario', icon: Package },
+  { href: '/inventory/movimientos', label: 'Movimientos', icon: Package },
   { href: '/settings', label: 'Configuración', icon: Settings },
 ]
 

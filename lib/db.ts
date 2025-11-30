@@ -12,7 +12,17 @@ import {
   seedUser,
   seedRoles,
 } from './seed-data'
-import { Hotel, HousekeepingTask, InventoryItem, InventoryMovement, Reservation, Room, User, RolePermission } from './types'
+import {
+  Hotel,
+  HousekeepingCompletion,
+  HousekeepingTask,
+  InventoryItem,
+  InventoryMovement,
+  Reservation,
+  Room,
+  User,
+  RolePermission,
+} from './types'
 
 const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.json')
 fs.mkdirSync(path.dirname(databasePath), { recursive: true })
@@ -22,7 +32,8 @@ type DbData = {
   users: (User & { createdAt: string; active: number })[]
   rooms: (Room & { createdAt: string; lastCleaned?: string })[]
   reservations: (Reservation & { createdAt: string; updatedAt: string; checkInDate: string; checkOutDate: string })[]
-  housekeeping_tasks: (HousekeepingTask & { createdAt: string; completedAt?: string })[]
+  housekeeping_tasks: (HousekeepingTask & { createdAt: string; completedAt?: string; completedBy?: string })[]
+  housekeeping_history: (HousekeepingCompletion & { createdAt?: string })[]
   inventory: (InventoryItem & { createdAt: string })[]
   inventory_movements: (InventoryMovement & { createdAt: string })[]
   roles: (RolePermission & { createdAt: string })[]
@@ -44,6 +55,7 @@ function loadData(): DbData {
       rooms: [],
       reservations: [],
       housekeeping_tasks: [],
+      housekeeping_history: [],
       inventory: [],
       inventory_movements: [],
       roles: [],
@@ -119,6 +131,11 @@ function seedIfNeeded() {
     dbData.housekeeping_tasks.push(
       ...seedHousekeepingTasks.map((task) => ({ ...task, createdAt: task.createdAt.toISOString() })),
     )
+    updated = true
+  }
+
+  if (!dbData.housekeeping_history) {
+    dbData.housekeeping_history = []
     updated = true
   }
 
@@ -211,6 +228,12 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((task) => mapDate(task)) as T[]
   }
 
+  if (sql.includes('FROM housekeeping_history')) {
+    return [...dbData.housekeeping_history]
+      .sort((a, b) => new Date(b.completedAt || b.createdAt || '').getTime() - new Date(a.completedAt || a.createdAt || '').getTime())
+      .map((entry) => mapDate(entry as any)) as T[]
+  }
+
   if (sql.includes('FROM users')) {
     return [...dbData.users]
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -274,8 +297,8 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   }
 
   if (sql.startsWith('UPDATE housekeeping_tasks SET')) {
-    if (values.length === 9) {
-      const [roomId, assignedTo, status, taskType, priority, notes, photoUrl, completedAt, id] = values
+    if (values.length === 10) {
+      const [roomId, assignedTo, status, taskType, priority, notes, photoUrl, completedAt, completedBy, id] = values
       const idx = dbData.housekeeping_tasks.findIndex((task) => task.id === id)
       if (idx !== -1) {
         dbData.housekeeping_tasks[idx] = {
@@ -288,23 +311,24 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
           notes,
           photoUrl,
           completedAt,
+          completedBy,
         }
         saveData(dbData)
       }
       return []
     }
 
-    const [status, photoUrl, completedAt, id] = values
+    const [status, photoUrl, completedAt, id, completedBy] = values
     const idx = dbData.housekeeping_tasks.findIndex((task) => task.id === id)
     if (idx !== -1) {
-      dbData.housekeeping_tasks[idx] = { ...dbData.housekeeping_tasks[idx], status, photoUrl, completedAt }
+      dbData.housekeeping_tasks[idx] = { ...dbData.housekeeping_tasks[idx], status, photoUrl, completedAt, completedBy }
       saveData(dbData)
     }
     return []
   }
 
   if (sql.startsWith('INSERT INTO housekeeping_tasks')) {
-    const [id, hotelId, roomId, assignedTo, status, taskType, priority, notes, photoUrl, createdAt, completedAt] = values
+    const [id, hotelId, roomId, assignedTo, status, taskType, priority, notes, photoUrl, createdAt, completedAt, completedBy] = values
     dbData.housekeeping_tasks.push({
       id,
       hotelId,
@@ -317,7 +341,15 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       photoUrl,
       createdAt,
       completedAt,
+      completedBy,
     })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO housekeeping_history')) {
+    const [id, taskId, roomId, completedBy, completedAt] = values
+    dbData.housekeeping_history.push({ id, taskId, roomId, completedBy, completedAt })
     saveData(dbData)
     return []
   }

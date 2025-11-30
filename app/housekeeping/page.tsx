@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, ClipboardList } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { HousekeepingTask } from '@/lib/types'
+import { useSessionUser } from '@/lib/use-session'
 
 // Mock staff members
 const staffMembers = [
@@ -24,6 +25,9 @@ const assigneeNames = staffMembers.reduce((acc, member) => {
 
 export default function HousekeepingPage() {
   const [tasks, setTasks] = useState<HousekeepingTask[]>([])
+  const [completed, setCompleted] = useState<
+    Array<{ id: string; taskId: string; roomId: string; roomNumber?: string; userName?: string; completedAt?: Date }>
+  >([])
   const [filters, setFilters] = useState<TaskFilters>({
     search: '',
     status: 'all',
@@ -32,6 +36,7 @@ export default function HousekeepingPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<HousekeepingTask | undefined>()
+  const { user } = useSessionUser()
 
   useEffect(() => {
     async function loadTasks() {
@@ -42,6 +47,12 @@ export default function HousekeepingPage() {
           ...task,
           createdAt: new Date(task.createdAt),
           completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+        })),
+      )
+      setCompleted(
+        (data.completed || []).map((item: any) => ({
+          ...item,
+          completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
         })),
       )
     }
@@ -100,6 +111,11 @@ export default function HousekeepingPage() {
   }
 
   const handleStatusChange = async (taskId: string, newStatus: HousekeepingTask['status']) => {
+    if (!user) {
+      alert('Debes iniciar sesión')
+      return
+    }
+
     setTasks((prev) =>
       prev.map((t) =>
         t.id === taskId
@@ -114,6 +130,22 @@ export default function HousekeepingPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...currentTask, status: newStatus }),
     })
+
+    const refresh = await fetch('/api/housekeeping')
+    const data = await refresh.json()
+    setTasks(
+      (data.tasks || []).map((task: any) => ({
+        ...task,
+        createdAt: new Date(task.createdAt),
+        completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+      })),
+    )
+    setCompleted(
+      (data.completed || []).map((item: any) => ({
+        ...item,
+        completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
+      })),
+    )
   }
 
   const handleAddTask = () => {
@@ -201,6 +233,29 @@ export default function HousekeepingPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-10 bg-card border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3">Tareas completadas</h3>
+            {completed.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aún no hay tareas cerradas.</p>
+            ) : (
+              <div className="divide-y">
+                {completed.map((entry) => (
+                  <div key={entry.id} className="py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-semibold">{entry.roomNumber ? `Habitación ${entry.roomNumber}` : entry.roomId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Cerrada por {entry.userName || 'Usuario'}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.completedAt ? new Date(entry.completedAt).toLocaleString() : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

@@ -9,6 +9,7 @@ import { Plus, Package, ClipboardCheck } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InventoryItem, InventoryMovement, UserRole } from '@/lib/types'
 import { useSessionUser } from '@/lib/use-session'
+import Link from 'next/link'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -22,7 +23,7 @@ export default function InventoryPage() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>()
   const { user } = useSessionUser()
   const canManageInventory = user?.role === 'super-admin'
-  const canAdjustStock = user?.role === 'super-admin' || user?.role === 'housekeeper'
+  const canAdjustStock = user?.role === 'super-admin'
 
   const loadInventory = useCallback(async () => {
     const response = await fetch('/api/inventory')
@@ -222,6 +223,11 @@ export default function InventoryPage() {
               <p className="text-muted-foreground">Controla suministros, amenidades y equipos por ubicación</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Link href="/inventory/movimientos" className="w-full sm:w-auto">
+                <Button variant="secondary" className="gap-2 w-full">
+                  Movimientos
+                </Button>
+              </Link>
               {canManageInventory && (
                 <Button variant="outline" className="gap-2" onClick={() => items.forEach(handlePhysicalCount)}>
                   <ClipboardCheck size={18} />

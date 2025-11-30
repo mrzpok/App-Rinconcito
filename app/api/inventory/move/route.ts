@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, quantity: nextQuantity, location: item.location, item: updatedItem ? mapItem(updatedItem) : null })
   }
 
-  if (!['super-admin', 'housekeeper'].includes(session.role)) {
+  if (session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Sin permisos para mover inventario' }, { status: 403 })
   }
 
