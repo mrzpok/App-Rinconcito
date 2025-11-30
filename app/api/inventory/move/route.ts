@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { query, queryOne } from '@/lib/db'
 import { getServerSession } from '@/lib/server-session'
 import { InventoryItem } from '@/lib/types'
+import crypto from 'node:crypto'
 
 export async function POST(request: Request) {
   const session = getServerSession()

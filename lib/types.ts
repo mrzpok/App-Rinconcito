@@ -96,7 +96,7 @@ export interface InventoryMovement {
   itemId: string;
   userId: string;
   change: number;
-  reason: 'use' | 'add' | 'move';
+  reason: 'use' | 'add' | 'move' | 'physical-count';
   locationFrom?: string;
   locationTo?: string;
   createdAt: Date;

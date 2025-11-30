@@ -10,6 +10,7 @@ interface InventoryCardProps {
   item: InventoryItem
   onEdit?: (item: InventoryItem) => void
   onUpdateStock?: (itemId: string, quantity: number) => void
+  onPhysicalCount?: () => void
 }
 
 const categoryIcons = {
@@ -20,13 +21,13 @@ const categoryIcons = {
 }
 
 const categoryLabels = {
-  supplies: 'Supplies',
-  amenities: 'Amenities',
-  equipment: 'Equipment',
-  linens: 'Linens',
+  supplies: 'Suministros',
+  amenities: 'Amenidades',
+  equipment: 'Equipo',
+  linens: 'Lencería',
 }
 
-export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProps) {
+export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount }: InventoryCardProps) {
   const [editMode, setEditMode] = useState(false)
   const [newQuantity, setNewQuantity] = useState(item.quantity)
 
@@ -46,19 +47,20 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
           <div>
             <h3 className="text-lg font-bold text-foreground">{item.name}</h3>
             <p className="text-xs text-muted-foreground">{categoryLabels[item.category]}</p>
+            <p className="text-xs text-muted-foreground">Ubicación: {item.location}</p>
           </div>
         </div>
         {isLowStock && (
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/20 text-destructive">
             <AlertTriangle size={14} />
-            <span className="text-xs font-semibold">Low Stock</span>
+            <span className="text-xs font-semibold">Stock bajo</span>
           </div>
         )}
       </div>
 
       <div className="space-y-3 py-4 border-y border-border mb-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Current Stock:</span>
+          <span className="text-sm text-muted-foreground">Stock actual:</span>
           <span className="text-lg font-bold text-primary">
             {item.quantity} {item.unit}
           </span>
@@ -66,7 +68,7 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Minimum Level:</span>
+            <span className="text-sm text-muted-foreground">Nivel mínimo:</span>
             <span className="text-sm font-semibold">{item.minimumLevel} {item.unit}</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
@@ -81,21 +83,14 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
 
         {item.supplier && (
           <div>
-            <span className="text-sm text-muted-foreground">Supplier:</span>
+            <span className="text-sm text-muted-foreground">Proveedor:</span>
             <p className="text-sm font-semibold">{item.supplier}</p>
-          </div>
-        )}
-
-        {item.location && (
-          <div>
-            <span className="text-sm text-muted-foreground">Ubicación:</span>
-            <p className="text-sm font-semibold">{item.location}</p>
           </div>
         )}
 
         {item.lastRestocked && (
           <p className="text-xs text-muted-foreground">
-            Last restocked: {new Date(item.lastRestocked).toLocaleDateString()}
+            Último abastecimiento: {new Date(item.lastRestocked).toLocaleDateString()}
           </p>
         )}
       </div>
@@ -111,15 +106,15 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
           />
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => setEditMode(false)} className="flex-1">
-              Cancel
+              Cancelar
             </Button>
             <Button size="sm" onClick={handleUpdateStock} className="flex-1">
-              Update
+              Actualizar
             </Button>
           </div>
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-col sm:flex-row">
           <Button
             variant="outline"
             size="sm"
@@ -127,7 +122,7 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
             onClick={() => setEditMode(true)}
           >
             <TrendingDown size={16} />
-            Update Stock
+            Ajustar stock
           </Button>
           <Button
             variant="outline"
@@ -136,8 +131,13 @@ export function InventoryCard({ item, onEdit, onUpdateStock }: InventoryCardProp
             onClick={() => onEdit?.(item)}
           >
             <Edit2 size={16} />
-            Edit
+            Editar
           </Button>
+          {onPhysicalCount && (
+            <Button variant="secondary" size="sm" className="flex-1" onClick={onPhysicalCount}>
+              Conteo físico
+            </Button>
+          )}
         </div>
       )}
     </Card>

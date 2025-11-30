@@ -192,6 +192,12 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((task) => mapDate(task)) as T[]
   }
 
+  if (sql.startsWith('SELECT id, email, name, role, hotelId')) {
+    return [...dbData.users]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((user) => ({ ...mapDate(user), active: Boolean(user.active) })) as T[]
+  }
+
   if (sql.startsWith('UPDATE inventory SET')) {
     if (values.length === 3) {
       const [quantity, location, id] = values
@@ -439,6 +445,23 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
         notes,
         updatedAt,
       }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO users')) {
+    const [id, email, name, password, role, hotelId, active, createdAt] = values
+    dbData.users.push({ id, email, name, password, role, hotelId, active, createdAt })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE users SET')) {
+    const [name, role, active, id] = values
+    const idx = dbData.users.findIndex((u) => u.id === id)
+    if (idx !== -1) {
+      dbData.users[idx] = { ...dbData.users[idx], name, role, active }
       saveData(dbData)
     }
     return []

@@ -5,9 +5,10 @@ import { InventoryCard } from '@/components/inventory/inventory-card'
 import { InventoryFilter, InventoryFilters } from '@/components/inventory/inventory-filter'
 import { InventoryModal } from '@/components/inventory/inventory-modal'
 import { Button } from '@/components/ui/button'
-import { Plus, Package } from 'lucide-react'
+import { Plus, Package, ClipboardCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { InventoryItem } from '@/lib/types'
+import { useSessionUser } from '@/lib/use-session'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -18,6 +19,7 @@ export default function InventoryPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>()
+  const { user } = useSessionUser()
 
   useEffect(() => {
     async function loadInventory() {
@@ -89,7 +91,13 @@ export default function InventoryPage() {
     await fetch('/api/inventory/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId, change, reason: 'ajuste', locationFrom: item.location, locationTo: item.location }),
+      body: JSON.stringify({
+        itemId,
+        change,
+        reason: change > 0 ? 'add' : 'use',
+        locationFrom: item.location,
+        locationTo: item.location,
+      }),
     })
 
     setItems((prev) =>
@@ -97,6 +105,25 @@ export default function InventoryPage() {
         i.id === itemId ? { ...i, quantity: newQuantity, lastRestocked: new Date() } : i,
       ),
     )
+  }
+
+  const handlePhysicalCount = async (item: InventoryItem) => {
+    const counted = window.prompt(`Conteo físico para ${item.name} (${item.location})`, `${item.quantity}`)
+    if (counted === null) return
+    const countedQuantity = Number(counted)
+    if (Number.isNaN(countedQuantity)) return
+
+    const response = await fetch('/api/inventory/physical', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id, countedQuantity, location: item.location, userId: user?.id }),
+    })
+    const data = await response.json()
+    if (data.item) {
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...data.item, createdAt: new Date(data.item.createdAt) } : i)),
+      )
+    }
   }
 
   const handleAddItem = () => {
@@ -128,10 +155,16 @@ export default function InventoryPage() {
               <h1 className="text-3xl font-bold text-foreground">Inventario</h1>
               <p className="text-muted-foreground">Controla suministros, amenidades y equipos por ubicación</p>
             </div>
-            <Button className="gap-2 w-full sm:w-auto" onClick={handleAddItem}>
-              <Plus size={18} />
-              Agregar artículo
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" className="gap-2" onClick={() => items.forEach(handlePhysicalCount)}>
+                <ClipboardCheck size={18} />
+                Inventario físico
+              </Button>
+              <Button className="gap-2" onClick={handleAddItem}>
+                <Plus size={18} />
+                Agregar artículo
+              </Button>
+            </div>
           </div>
 
           {/* Stats Bar */}
@@ -181,6 +214,7 @@ export default function InventoryPage() {
                   item={item}
                   onEdit={handleEdit}
                   onUpdateStock={handleUpdateStock}
+                  onPhysicalCount={() => handlePhysicalCount(item)}
                 />
               ))}
             </div>

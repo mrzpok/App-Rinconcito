@@ -24,7 +24,12 @@ export default function RoomsPage() {
     async function loadRooms() {
       const response = await fetch('/api/rooms')
       const data = await response.json()
-      setRooms(data.rooms || [])
+      const parsed = (data.rooms || []).map((room: any) => ({
+        ...room,
+        createdAt: new Date(room.createdAt),
+        lastCleaned: room.lastCleaned ? new Date(room.lastCleaned) : undefined,
+      }))
+      setRooms(parsed)
     }
 
     loadRooms()
@@ -46,18 +51,45 @@ export default function RoomsPage() {
     setIsModalOpen(true)
   }
 
-  const handleSaveRoom = (updatedRoom: Room) => {
-    setRooms((prev) =>
-      prev.map((r) => (r.id === updatedRoom.id ? updatedRoom : r))
-    )
+  const handleSaveRoom = async (updatedRoom: Room) => {
+    const isEditing = Boolean(updatedRoom.id)
+    const payload = {
+      ...updatedRoom,
+      createdAt: updatedRoom.createdAt?.toISOString?.() || new Date().toISOString(),
+      lastCleaned: updatedRoom.lastCleaned ? new Date(updatedRoom.lastCleaned).toISOString() : null,
+    }
+
+    const response = await fetch('/api/rooms', {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await response.json()
+    if (data.room) {
+      setRooms((prev) => {
+        const roomData = { ...data.room, createdAt: new Date(data.room.createdAt) }
+        if (isEditing) return prev.map((r) => (r.id === updatedRoom.id ? roomData : r))
+        return [...prev, roomData]
+      })
+    }
     setSelectedRoom(undefined)
   }
 
-  const handleStatusChange = (roomId: string, newStatus: Room['status']) => {
+  const handleStatusChange = async (roomId: string, newStatus: Room['status']) => {
+    const room = rooms.find((r) => r.id === roomId)
+    if (!room) return
+
+    const lastCleaned = newStatus === 'cleaning' ? new Date().toISOString() : room.lastCleaned
+    await fetch('/api/rooms', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...room, status: newStatus, lastCleaned }),
+    })
+
     setRooms((prev) =>
       prev.map((r) =>
-        r.id === roomId ? { ...r, status: newStatus, lastCleaned: newStatus === 'cleaning' ? new Date() : r.lastCleaned } : r
-      )
+        r.id === roomId ? { ...r, status: newStatus, lastCleaned: lastCleaned ? new Date(lastCleaned) : undefined } : r,
+      ),
     )
   }
 
@@ -84,12 +116,12 @@ export default function RoomsPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Room Management</h1>
-              <p className="text-muted-foreground">View and manage all hotel rooms</p>
+              <h1 className="text-3xl font-bold text-foreground">Habitaciones</h1>
+              <p className="text-muted-foreground">Gestiona todas las habitaciones con datos reales</p>
             </div>
             <Button className="gap-2 w-full sm:w-auto" onClick={handleAddRoom}>
               <Plus size={18} />
-              Add Room
+              Agregar habitación
             </Button>
           </div>
 
@@ -97,23 +129,23 @@ export default function RoomsPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-primary">{stats.total}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total Rooms</p>
+              <p className="text-xs text-muted-foreground mt-1">Total de habitaciones</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-accent">{stats.available}</p>
-              <p className="text-xs text-muted-foreground mt-1">Available</p>
+              <p className="text-xs text-muted-foreground mt-1">Disponibles</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-primary">{stats.occupied}</p>
-              <p className="text-xs text-muted-foreground mt-1">Occupied</p>
+              <p className="text-xs text-muted-foreground mt-1">Ocupadas</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-blue-500">{stats.cleaning}</p>
-              <p className="text-xs text-muted-foreground mt-1">Cleaning</p>
+              <p className="text-xs text-muted-foreground mt-1">En limpieza</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{stats.maintenance}</p>
-              <p className="text-xs text-muted-foreground mt-1">Maintenance</p>
+              <p className="text-xs text-muted-foreground mt-1">Mantenimiento</p>
             </div>
           </div>
 
@@ -126,7 +158,7 @@ export default function RoomsPage() {
           {filteredRooms.length === 0 ? (
             <div className="text-center py-12">
               <BarChart3 size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-              <p className="text-muted-foreground">No rooms found matching your filters</p>
+              <p className="text-muted-foreground">No hay habitaciones que coincidan con los filtros</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
