@@ -7,11 +7,12 @@ import { InventoryModal } from '@/components/inventory/inventory-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, Package, ClipboardCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { InventoryItem } from '@/lib/types'
+import { InventoryItem, InventoryMovement, UserRole } from '@/lib/types'
 import { useSessionUser } from '@/lib/use-session'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
+  const [movements, setMovements] = useState<(InventoryMovement & { itemName?: string; userName?: string })[]>([])
   const [filters, setFilters] = useState<InventoryFilters>({
     search: '',
     category: 'all',
@@ -20,6 +21,8 @@ export default function InventoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>()
   const { user } = useSessionUser()
+  const canManageInventory = user?.role === 'super-admin'
+  const canAdjustStock = user?.role === 'super-admin' || user?.role === 'housekeeper'
 
   useEffect(() => {
     async function loadInventory() {
@@ -34,7 +37,18 @@ export default function InventoryPage() {
     }
 
     loadInventory()
+    loadMovements()
   }, [])
+
+  async function loadMovements() {
+    const response = await fetch('/api/inventory/movements')
+    const data = await response.json()
+    const parsed = (data.movements || []).map((move: any) => ({
+      ...move,
+      createdAt: new Date(move.createdAt),
+    }))
+    setMovements(parsed)
+  }
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -59,6 +73,11 @@ export default function InventoryPage() {
 
   const handleSaveItem = async (updatedItem: InventoryItem) => {
     const isEditing = Boolean(selectedItem)
+    if (user?.role !== 'super-admin') {
+      alert('Solo el super administrador puede crear o editar artículos')
+      return
+    }
+
     const response = await fetch('/api/inventory', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,6 +102,11 @@ export default function InventoryPage() {
   }
 
   const handleUpdateStock = async (itemId: string, newQuantity: number) => {
+    if (!user || !['super-admin', 'housekeeper'].includes(user.role)) {
+      alert('Solo el super administrador o housekeeping pueden ajustar stock')
+      return
+    }
+
     const item = items.find((i) => i.id === itemId)
     const change = newQuantity - (item?.quantity || 0)
 
@@ -105,9 +129,16 @@ export default function InventoryPage() {
         i.id === itemId ? { ...i, quantity: newQuantity, lastRestocked: new Date() } : i,
       ),
     )
+
+    loadMovements()
   }
 
   const handlePhysicalCount = async (item: InventoryItem) => {
+    if (!user || user.role !== 'super-admin') {
+      alert('Solo el super administrador puede registrar conteos físicos')
+      return
+    }
+
     const counted = window.prompt(`Conteo físico para ${item.name} (${item.location})`, `${item.quantity}`)
     if (counted === null) return
     const countedQuantity = Number(counted)
@@ -123,6 +154,23 @@ export default function InventoryPage() {
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...data.item, createdAt: new Date(data.item.createdAt) } : i)),
       )
+    }
+
+    loadMovements()
+  }
+
+  const handleUseOne = async (item: InventoryItem) => {
+    const response = await fetch('/api/inventory/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id, change: -1, reason: 'use' }),
+    })
+    const data = await response.json()
+    if (data.ok) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity: data.quantity } : i)))
+      loadMovements()
+    } else if (data.error) {
+      alert(data.error)
     }
   }
 
@@ -156,14 +204,18 @@ export default function InventoryPage() {
               <p className="text-muted-foreground">Controla suministros, amenidades y equipos por ubicación</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" className="gap-2" onClick={() => items.forEach(handlePhysicalCount)}>
-                <ClipboardCheck size={18} />
-                Inventario físico
-              </Button>
-              <Button className="gap-2" onClick={handleAddItem}>
-                <Plus size={18} />
-                Agregar artículo
-              </Button>
+              {canManageInventory && (
+                <Button variant="outline" className="gap-2" onClick={() => items.forEach(handlePhysicalCount)}>
+                  <ClipboardCheck size={18} />
+                  Inventario físico
+                </Button>
+              )}
+              {canManageInventory && (
+                <Button className="gap-2" onClick={handleAddItem}>
+                  <Plus size={18} />
+                  Agregar artículo
+                </Button>
+              )}
             </div>
           </div>
 
@@ -212,13 +264,46 @@ export default function InventoryPage() {
                 <InventoryCard
                   key={item.id}
                   item={item}
-                  onEdit={handleEdit}
-                  onUpdateStock={handleUpdateStock}
-                  onPhysicalCount={() => handlePhysicalCount(item)}
+                  onEdit={canManageInventory ? handleEdit : undefined}
+                  onUpdateStock={canAdjustStock ? handleUpdateStock : undefined}
+                  onPhysicalCount={canAdjustStock ? () => handlePhysicalCount(item) : undefined}
+                  onUseOne={user?.role === 'colaborador' ? () => handleUseOne(item) : undefined}
+                  role={user?.role as UserRole}
                 />
               ))}
             </div>
           )}
+
+          <div className="mt-8 bg-card border rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Movimientos recientes</h3>
+              <p className="text-xs text-muted-foreground">Solo registra usos con usuario y fecha</p>
+            </div>
+            {movements.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aún no hay movimientos registrados.</p>
+            ) : (
+              <div className="divide-y">
+                {movements.slice(0, 12).map((move) => (
+                  <div key={move.id} className="py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-semibold">{move.itemName || 'Artículo'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {move.userName || 'Usuario'} • {move.reason === 'use' ? 'Consumo' : 'Movimiento'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold ${move.change < 0 ? 'text-destructive' : 'text-primary'}`}>
+                        {move.change > 0 ? `+${move.change}` : move.change} {move.locationTo || move.locationFrom || ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {move.createdAt ? new Date(move.createdAt).toLocaleString() : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

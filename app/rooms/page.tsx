@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, BarChart3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Room } from '@/lib/types'
+import { useSessionUser } from '@/lib/use-session'
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -19,6 +20,9 @@ export default function RoomsPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState<Room | undefined>()
+  const { user } = useSessionUser()
+  const canManageRooms = user?.role === 'super-admin' || user?.role === 'housekeeper'
+  const canDeleteRooms = user?.role === 'super-admin'
 
   useEffect(() => {
     async function loadRooms() {
@@ -59,6 +63,11 @@ export default function RoomsPage() {
       lastCleaned: updatedRoom.lastCleaned ? new Date(updatedRoom.lastCleaned).toISOString() : null,
     }
 
+    if (!canManageRooms) {
+      alert('Solo housekeeping o el super administrador pueden editar o crear habitaciones')
+      return
+    }
+
     const response = await fetch('/api/rooms', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -79,6 +88,11 @@ export default function RoomsPage() {
     const room = rooms.find((r) => r.id === roomId)
     if (!room) return
 
+    if (!canManageRooms) {
+      alert('Sin permisos para cambiar el estado de habitaciones')
+      return
+    }
+
     const lastCleaned = newStatus === 'cleaning' ? new Date().toISOString() : room.lastCleaned
     await fetch('/api/rooms', {
       method: 'PUT',
@@ -94,11 +108,19 @@ export default function RoomsPage() {
   }
 
   const handleAddRoom = () => {
+    if (!canManageRooms) {
+      alert('Solo housekeeping o el super administrador pueden crear habitaciones')
+      return
+    }
     setSelectedRoom(undefined)
     setIsModalOpen(true)
   }
 
   const handleDelete = async (roomId: string) => {
+    if (!canDeleteRooms) {
+      alert('Solo el super administrador puede eliminar habitaciones')
+      return
+    }
     await fetch('/api/rooms', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -128,7 +150,7 @@ export default function RoomsPage() {
               <h1 className="text-3xl font-bold text-foreground">Habitaciones</h1>
               <p className="text-muted-foreground">Gestiona todas las habitaciones con datos reales</p>
             </div>
-            <Button className="gap-2 w-full sm:w-auto" onClick={handleAddRoom}>
+            <Button className="gap-2 w-full sm:w-auto" onClick={handleAddRoom} disabled={!canManageRooms}>
               <Plus size={18} />
               Agregar habitación
             </Button>
@@ -175,9 +197,12 @@ export default function RoomsPage() {
                 <RoomCard
                   key={room.id}
                   room={room}
-                  onEdit={handleEdit}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDelete}
+                  onEdit={canManageRooms ? handleEdit : undefined}
+                  onStatusChange={canManageRooms ? handleStatusChange : undefined}
+                  onDelete={canDeleteRooms ? handleDelete : undefined}
+                  canEdit={canManageRooms}
+                  canChangeStatus={canManageRooms}
+                  canDelete={canDeleteRooms}
                 />
               ))}
             </div>

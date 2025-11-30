@@ -2,8 +2,8 @@
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { InventoryItem } from '@/lib/types'
-import { Edit2, AlertTriangle, TrendingDown } from 'lucide-react'
+import { InventoryItem, UserRole } from '@/lib/types'
+import { Edit2, AlertTriangle, TrendingDown, MinusCircle } from 'lucide-react'
 import { useState } from 'react'
 
 interface InventoryCardProps {
@@ -11,6 +11,8 @@ interface InventoryCardProps {
   onEdit?: (item: InventoryItem) => void
   onUpdateStock?: (itemId: string, quantity: number) => void
   onPhysicalCount?: () => void
+  onUseOne?: () => void
+  role?: UserRole
 }
 
 const categoryIcons = {
@@ -27,9 +29,13 @@ const categoryLabels = {
   linens: 'Lencería',
 }
 
-export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount }: InventoryCardProps) {
+export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, onUseOne, role }: InventoryCardProps) {
   const [editMode, setEditMode] = useState(false)
   const [newQuantity, setNewQuantity] = useState(item.quantity)
+
+  const canAdjustStock = role === 'super-admin' || role === 'housekeeper'
+  const canManageItem = role === 'super-admin'
+  const canUseOne = role === 'colaborador'
 
   const isLowStock = item.quantity <= item.minimumLevel
   const stockPercentage = Math.min((item.quantity / (item.minimumLevel * 2)) * 100, 100)
@@ -95,7 +101,7 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount }: 
         )}
       </div>
 
-      {editMode ? (
+      {editMode && canAdjustStock ? (
         <div className="space-y-3 mb-4">
           <input
             type="number"
@@ -115,27 +121,40 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount }: 
         </div>
       ) : (
         <div className="flex gap-2 flex-col sm:flex-row">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-2"
-            onClick={() => setEditMode(true)}
-          >
-            <TrendingDown size={16} />
-            Ajustar stock
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-2"
-            onClick={() => onEdit?.(item)}
-          >
-            <Edit2 size={16} />
-            Editar
-          </Button>
-          {onPhysicalCount && (
+          {canAdjustStock && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => setEditMode(true)}
+            >
+              <TrendingDown size={16} />
+              Ajustar stock
+            </Button>
+          )}
+
+          {canManageItem && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => onEdit?.(item)}
+            >
+              <Edit2 size={16} />
+              Editar
+            </Button>
+          )}
+
+          {onPhysicalCount && canAdjustStock && (
             <Button variant="secondary" size="sm" className="flex-1" onClick={onPhysicalCount}>
               Conteo físico
+            </Button>
+          )}
+
+          {canUseOne && onUseOne && (
+            <Button variant="destructive" size="sm" className="flex-1 gap-2" onClick={onUseOne}>
+              <MinusCircle size={16} />
+              Usar 1
             </Button>
           )}
         </div>

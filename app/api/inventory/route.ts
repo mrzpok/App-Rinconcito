@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { query, queryOne } from '@/lib/db'
+import { getServerSession } from '@/lib/server-session'
 import { InventoryItem } from '@/lib/types'
+import crypto from 'node:crypto'
 
 function mapItem(row: any): InventoryItem {
   return {
@@ -18,6 +20,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = getServerSession()
+  if (!session || session.role !== 'super-admin') {
+    return NextResponse.json({ error: 'Solo el super administrador puede crear inventario' }, { status: 403 })
+  }
+
   const body = await request.json()
 
   const id = crypto.randomUUID()
@@ -45,11 +52,23 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const session = getServerSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
   const body = await request.json()
   if (!body.id) return NextResponse.json({ error: 'Falta el ID del artículo' }, { status: 400 })
 
   const existing = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [body.id])
   if (!existing) return NextResponse.json({ error: 'Artículo no encontrado' }, { status: 404 })
+
+  const changingQuantity = body.quantity !== undefined && body.quantity !== existing.quantity
+  if (changingQuantity && session.role !== 'super-admin') {
+    return NextResponse.json({ error: 'Solo el super administrador puede modificar cantidades' }, { status: 403 })
+  }
+
+  if (session.role === 'colaborador') {
+    return NextResponse.json({ error: 'Sin permisos para editar inventario' }, { status: 403 })
+  }
 
   await query(
     'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ? WHERE id = ?',

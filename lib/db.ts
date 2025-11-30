@@ -199,6 +199,12 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((item) => mapDate(item)) as T[]
   }
 
+  if (sql.includes('FROM inventory_movements')) {
+    return [...dbData.inventory_movements]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((movement) => mapDate(movement)) as T[]
+  }
+
   if (sql.includes('FROM housekeeping_tasks')) {
     return [...dbData.housekeeping_tasks]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

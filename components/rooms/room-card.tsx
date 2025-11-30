@@ -11,6 +11,9 @@ interface RoomCardProps {
   onEdit?: (room: Room) => void
   onStatusChange?: (roomId: string, newStatus: Room['status']) => void
   onDelete?: (roomId: string) => void
+  canEdit?: boolean
+  canDelete?: boolean
+  canChangeStatus?: boolean
 }
 
 const roomStatusColors = {
@@ -21,7 +24,7 @@ const roomStatusColors = {
   blocked: { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-muted/30' },
 }
 
-export function RoomCard({ room, onEdit, onStatusChange, onDelete }: RoomCardProps) {
+export function RoomCard({ room, onEdit, onStatusChange, onDelete, canEdit, canDelete, canChangeStatus }: RoomCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const statusConfig = roomStatusColors[room.status]
 
@@ -76,49 +79,53 @@ export function RoomCard({ room, onEdit, onStatusChange, onDelete }: RoomCardPro
       )}
 
       <div className="flex gap-2 flex-wrap">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-2"
-          onClick={() => onEdit?.(room)}
-        >
-          <Edit2 size={16} />
-          Editar
-        </Button>
-        <div className="relative">
+        {canEdit && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex-1 gap-2"
+            onClick={() => onEdit?.(room)}
           >
-            Estado
+            <Edit2 size={16} />
+            Editar
           </Button>
-          {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-lg shadow-lg z-10">
-              {(['available', 'occupied', 'cleaning', 'maintenance', 'blocked'] as const).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    onStatusChange?.(room.id, status)
-                    setDropdownOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg capitalize"
-                >
-                  {status === 'available'
-                    ? 'Disponible'
-                    : status === 'occupied'
-                    ? 'Ocupada'
-                    : status === 'cleaning'
-                    ? 'En limpieza'
-                    : status === 'maintenance'
-                    ? 'Mantenimiento'
-                    : 'Bloqueada'}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {onDelete && (
+        )}
+        {canChangeStatus && (
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              Estado
+            </Button>
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-lg shadow-lg z-10">
+                {(['available', 'occupied', 'cleaning', 'maintenance', 'blocked'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      onStatusChange?.(room.id, status)
+                      setDropdownOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg capitalize"
+                  >
+                    {status === 'available'
+                      ? 'Disponible'
+                      : status === 'occupied'
+                      ? 'Ocupada'
+                      : status === 'cleaning'
+                      ? 'En limpieza'
+                      : status === 'maintenance'
+                      ? 'Mantenimiento'
+                      : 'Bloqueada'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {onDelete && canDelete && (
           <Button variant="destructive" size="sm" className="flex-1" onClick={() => onDelete(room.id)}>
             Eliminar
           </Button>

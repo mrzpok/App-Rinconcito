@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { Room } from '@/lib/types'
 import crypto from 'node:crypto'
+import { getServerSession } from '@/lib/server-session'
 
 function mapRoom(row: any): Room {
   return {
@@ -19,6 +20,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = getServerSession()
+  if (!session || !['super-admin', 'housekeeper'].includes(session.role)) {
+    return NextResponse.json({ error: 'Solo el super administrador o housekeeping pueden crear habitaciones' }, { status: 403 })
+  }
+
   const body = await request.json()
   const id = body.id || crypto.randomUUID()
   const createdAt = new Date().toISOString()
@@ -43,6 +49,11 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const session = getServerSession()
+  if (!session || !['super-admin', 'housekeeper'].includes(session.role)) {
+    return NextResponse.json({ error: 'Sin permisos para editar habitaciones' }, { status: 403 })
+  }
+
   const body = await request.json()
 
   await query(
@@ -63,6 +74,11 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const session = getServerSession()
+  if (!session || session.role !== 'super-admin') {
+    return NextResponse.json({ error: 'Solo el super administrador puede eliminar habitaciones' }, { status: 403 })
+  }
+
   const body = await request.json()
   if (!body.id) return NextResponse.json({ error: 'Falta el ID de la habitación' }, { status: 400 })
 

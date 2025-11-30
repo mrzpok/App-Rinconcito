@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, BookOpen, Book as Door, Book as Broom, Package, Settings, LogOut, Menu, X, ChevronDown, Database } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Book as Door, Book as Broom, Package, Settings, LogOut, Menu, X, ChevronDown, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useSessionUser } from '@/lib/use-session'
 
@@ -13,7 +13,6 @@ const navItems = [
   { href: '/rooms', label: 'Habitaciones', icon: Door },
   { href: '/housekeeping', label: 'Limpieza', icon: Broom },
   { href: '/inventory', label: 'Inventario', icon: Package },
-  { href: '/base-datos', label: 'Base de Datos', icon: Database },
   { href: '/settings', label: 'Configuración', icon: Settings },
 ]
 
@@ -77,6 +76,22 @@ export function MainNav() {
               </Link>
             )
           })}
+
+          {user?.role === 'super-admin' && (
+            <Link href="/admin">
+              <button
+                onClick={() => setOpen(false)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  pathname.startsWith('/admin')
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <Users size={20} />
+                <span>Usuarios</span>
+              </button>
+            </Link>
+          )}
         </nav>
 
         {/* User Profile & Logout */}
