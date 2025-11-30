@@ -1,5 +1,5 @@
 // PMS Core Types
-export type UserRole = 'super-admin' | 'colaborador' | 'housekeeper';
+export type UserRole = string;
 
 export interface User {
   id: string;
@@ -11,6 +11,17 @@ export interface User {
   active: boolean;
   createdAt: Date;
 }
+
+export type RolePermission = {
+  id: string;
+  name: string;
+  canManageRooms: boolean;
+  canManageInventory: boolean;
+  canManageHousekeeping: boolean;
+  canManageUsers: boolean;
+  canViewDashboard: boolean;
+  createdAt: Date;
+};
 
 export interface Hotel {
   id: string;

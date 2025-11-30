@@ -10,8 +10,9 @@ import {
   seedRooms,
   seedCollaborators,
   seedUser,
+  seedRoles,
 } from './seed-data'
-import { Hotel, HousekeepingTask, InventoryItem, InventoryMovement, Reservation, Room, User } from './types'
+import { Hotel, HousekeepingTask, InventoryItem, InventoryMovement, Reservation, Room, User, RolePermission } from './types'
 
 const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.json')
 fs.mkdirSync(path.dirname(databasePath), { recursive: true })
@@ -24,6 +25,7 @@ type DbData = {
   housekeeping_tasks: (HousekeepingTask & { createdAt: string; completedAt?: string })[]
   inventory: (InventoryItem & { createdAt: string })[]
   inventory_movements: (InventoryMovement & { createdAt: string })[]
+  roles: (RolePermission & { createdAt: string })[]
   airbnb: {
     isConfigured: boolean
     iCalUrl: string
@@ -44,6 +46,7 @@ function loadData(): DbData {
       housekeeping_tasks: [],
       inventory: [],
       inventory_movements: [],
+      roles: [],
       airbnb: {
         isConfigured: true,
         iCalUrl:
@@ -65,6 +68,11 @@ let dbData = loadData()
 
 function seedIfNeeded() {
   let updated = false
+
+  if (!dbData.roles) {
+    dbData.roles = []
+    updated = true
+  }
 
   if (dbData.hotels.length === 0) {
     dbData.hotels.push({ ...seedHotel, createdAt: seedHotel.createdAt.toISOString() })
@@ -123,6 +131,11 @@ function seedIfNeeded() {
     dbData.inventory_movements.push(
       ...seedInventoryMovements.map((movement) => ({ ...movement, createdAt: movement.createdAt.toISOString() })),
     )
+    updated = true
+  }
+
+  if (dbData.roles.length === 0) {
+    dbData.roles.push(...seedRoles.map((role) => ({ ...role, createdAt: role.createdAt.toISOString() })))
     updated = true
   }
 
@@ -196,6 +209,12 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return [...dbData.users]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((user) => ({ ...mapDate(user), active: Boolean(user.active) })) as T[]
+  }
+
+  if (sql.includes('FROM roles')) {
+    return [...dbData.roles]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((role) => mapDate(role)) as T[]
   }
 
   if (sql.includes('FROM hotels')) {
@@ -379,6 +398,13 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return []
   }
 
+  if (sql.startsWith('DELETE FROM rooms')) {
+    const [id] = values
+    dbData.rooms = dbData.rooms.filter((room) => room.id !== id)
+    saveData(dbData)
+    return []
+  }
+
   if (sql.startsWith('INSERT INTO reservations')) {
     const [
       id,
@@ -471,6 +497,55 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return []
   }
 
+  if (sql.startsWith('DELETE FROM users')) {
+    const [id] = values
+    dbData.users = dbData.users.filter((u) => u.id !== id)
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO roles')) {
+    const [id, name, canManageRooms, canManageInventory, canManageHousekeeping, canManageUsers, canViewDashboard, createdAt] = values
+    dbData.roles.push({
+      id,
+      name,
+      canManageRooms: Boolean(canManageRooms),
+      canManageInventory: Boolean(canManageInventory),
+      canManageHousekeeping: Boolean(canManageHousekeeping),
+      canManageUsers: Boolean(canManageUsers),
+      canViewDashboard: Boolean(canViewDashboard),
+      createdAt,
+    })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE roles SET')) {
+    const [name, canManageRooms, canManageInventory, canManageHousekeeping, canManageUsers, canViewDashboard, id] = values
+    const idx = dbData.roles.findIndex((r) => r.id === id)
+    if (idx !== -1) {
+      dbData.roles[idx] = {
+        ...dbData.roles[idx],
+        name,
+        canManageRooms: Boolean(canManageRooms),
+        canManageInventory: Boolean(canManageInventory),
+        canManageHousekeeping: Boolean(canManageHousekeeping),
+        canManageUsers: Boolean(canManageUsers),
+        canViewDashboard: Boolean(canViewDashboard),
+      }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM roles')) {
+    const [id] = values
+    dbData.roles = dbData.roles.filter((r) => r.id !== id)
+    dbData.users = dbData.users.map((u) => (u.role === id ? { ...u, role: 'colaborador' } : u))
+    saveData(dbData)
+    return []
+  }
+
   return []
 }
 
@@ -497,6 +572,12 @@ export async function queryOne<T = any>(sql: string, values: any[] = []): Promis
   if (sql.startsWith('SELECT id, name, address')) {
     const hotel = dbData.hotels[0]
     return (hotel ? mapDate(hotel) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT * FROM roles WHERE id = ?')) {
+    const id = values[0]
+    const role = dbData.roles.find((r) => r.id === id || r.name === id)
+    return (role ? mapDate(role) : null) as T | null
   }
 
   if (sql.startsWith('SELECT * FROM airbnb_config')) {

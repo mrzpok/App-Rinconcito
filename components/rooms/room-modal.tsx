@@ -40,7 +40,7 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold">{room ? 'Edit Room' : 'Add Room'}</h2>
+          <h2 className="text-lg font-semibold">{room ? 'Editar habitación' : 'Agregar habitación'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
             <X size={20} />
           </button>
@@ -49,7 +49,7 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Room Number</label>
+              <label className="block text-sm font-medium mb-1">Número</label>
               <input
                 type="text"
                 value={formData.roomNumber}
@@ -59,7 +59,7 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Floor</label>
+              <label className="block text-sm font-medium mb-1">Piso</label>
               <input
                 type="number"
                 value={formData.floor}
@@ -72,21 +72,21 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
+              <label className="block text-sm font-medium mb-1">Tipo</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as Room['type'] })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="single">Single</option>
-                <option value="double">Double</option>
+                <option value="single">Individual</option>
+                <option value="double">Doble</option>
                 <option value="suite">Suite</option>
                 <option value="deluxe">Deluxe</option>
-                <option value="presidential">Presidential</option>
+                <option value="presidential">Presidencial</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Max Occupancy</label>
+              <label className="block text-sm font-medium mb-1">Capacidad</label>
               <input
                 type="number"
                 value={formData.maxOccupancy}
@@ -98,7 +98,7 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Price per Night ($)</label>
+            <label className="block text-sm font-medium mb-1">Precio por noche ($)</label>
             <input
               type="number"
               value={formData.price}
@@ -111,7 +111,7 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
+            <label className="block text-sm font-medium mb-1">Notas</label>
             <textarea
               value={formData.notes || ''}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -122,10 +122,10 @@ export function RoomModal({ room, isOpen, onClose, onSave }: RoomModalProps) {
 
           <div className="flex gap-3 pt-4">
             <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" className="flex-1">
-              Save Room
+              Guardar
             </Button>
           </div>
         </form>

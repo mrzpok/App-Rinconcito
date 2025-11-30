@@ -1,4 +1,4 @@
-import { Hotel, User, Room, Reservation, HousekeepingTask, InventoryItem, InventoryMovement } from './types'
+import { Hotel, User, Room, Reservation, HousekeepingTask, InventoryItem, InventoryMovement, RolePermission } from './types'
 
 export const seedHotel: Hotel = {
   id: '1',
@@ -43,6 +43,39 @@ export const seedCollaborators: User[] = [
     hotelId: '1',
     active: true,
     createdAt: new Date('2024-02-15'),
+  },
+]
+
+export const seedRoles: RolePermission[] = [
+  {
+    id: 'role-admin',
+    name: 'super-admin',
+    canManageRooms: true,
+    canManageInventory: true,
+    canManageHousekeeping: true,
+    canManageUsers: true,
+    canViewDashboard: true,
+    createdAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'role-house',
+    name: 'housekeeper',
+    canManageRooms: true,
+    canManageInventory: true,
+    canManageHousekeeping: true,
+    canManageUsers: false,
+    canViewDashboard: true,
+    createdAt: new Date('2024-02-15'),
+  },
+  {
+    id: 'role-colab',
+    name: 'colaborador',
+    canManageRooms: false,
+    canManageInventory: true,
+    canManageHousekeeping: true,
+    canManageUsers: false,
+    canViewDashboard: true,
+    createdAt: new Date('2024-02-01'),
   },
 ]
 

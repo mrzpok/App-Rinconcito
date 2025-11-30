@@ -49,3 +49,11 @@ export async function PUT(request: Request) {
   const user = await queryOne<User>('SELECT id, email, name, role, hotelId, active, createdAt FROM users WHERE id = ?', [body.id])
   return NextResponse.json({ user: user ? mapUser(user) : null })
 }
+
+export async function DELETE(request: Request) {
+  const body = await request.json()
+  if (!body.id) return NextResponse.json({ error: 'Falta el ID del usuario' }, { status: 400 })
+
+  await query('DELETE FROM users WHERE id = ?', [body.id])
+  return NextResponse.json({ ok: true })
+}

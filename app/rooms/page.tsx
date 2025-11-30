@@ -98,6 +98,15 @@ export default function RoomsPage() {
     setIsModalOpen(true)
   }
 
+  const handleDelete = async (roomId: string) => {
+    await fetch('/api/rooms', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: roomId }),
+    })
+    setRooms((prev) => prev.filter((room) => room.id !== roomId))
+  }
+
   // Statistics
   const stats = {
     total: rooms.length,
@@ -168,6 +177,7 @@ export default function RoomsPage() {
                   room={room}
                   onEdit={handleEdit}
                   onStatusChange={handleStatusChange}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

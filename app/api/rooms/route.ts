@@ -61,3 +61,11 @@ export async function PUT(request: Request) {
 
   return NextResponse.json({ ok: true })
 }
+
+export async function DELETE(request: Request) {
+  const body = await request.json()
+  if (!body.id) return NextResponse.json({ error: 'Falta el ID de la habitación' }, { status: 400 })
+
+  await query('DELETE FROM rooms WHERE id = ?', [body.id])
+  return NextResponse.json({ ok: true })
+}
