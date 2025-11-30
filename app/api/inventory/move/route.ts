@@ -4,6 +4,14 @@ import { getServerSession } from '@/lib/server-session'
 import { InventoryItem } from '@/lib/types'
 import crypto from 'node:crypto'
 
+function mapItem(row: InventoryItem) {
+  return {
+    ...row,
+    createdAt: row.createdAt ? new Date(row.createdAt) : undefined,
+    lastRestocked: row.lastRestocked ? new Date(row.lastRestocked) : undefined,
+  }
+}
+
 export async function POST(request: Request) {
   const session = getServerSession()
   if (!session) {
@@ -11,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   const { itemId, change, reason, locationFrom, locationTo } = await request.json()
-  if (!itemId || !change || !reason) {
+  if (!itemId || change === undefined || change === null || !reason) {
     return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
   }
 
@@ -35,7 +43,9 @@ export async function POST(request: Request) {
       [crypto.randomUUID(), itemId, session.id, negative, 'use', item.location, item.location, new Date().toISOString()],
     )
 
-    return NextResponse.json({ ok: true, quantity: nextQuantity, location: item.location })
+    const updatedItem = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [itemId])
+
+    return NextResponse.json({ ok: true, quantity: nextQuantity, location: item.location, item: updatedItem ? mapItem(updatedItem) : null })
   }
 
   if (!['super-admin', 'housekeeper'].includes(session.role)) {
@@ -55,5 +65,12 @@ export async function POST(request: Request) {
     [crypto.randomUUID(), itemId, session.id, Number(change), reason, locationFrom || item.location, targetLocation, new Date().toISOString()],
   )
 
-  return NextResponse.json({ ok: true, quantity: nextQuantity, location: targetLocation })
+  const updatedItem = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [itemId])
+
+  return NextResponse.json({
+    ok: true,
+    quantity: nextQuantity,
+    location: targetLocation,
+    item: updatedItem ? mapItem(updatedItem) : null,
+  })
 }

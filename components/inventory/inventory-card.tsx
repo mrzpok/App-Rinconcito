@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InventoryItem, UserRole } from '@/lib/types'
 import { Edit2, AlertTriangle, TrendingDown, MinusCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface InventoryCardProps {
   item: InventoryItem
@@ -32,6 +32,10 @@ const categoryLabels = {
 export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, onUseOne, role }: InventoryCardProps) {
   const [editMode, setEditMode] = useState(false)
   const [newQuantity, setNewQuantity] = useState(item.quantity)
+
+  useEffect(() => {
+    setNewQuantity(item.quantity)
+  }, [item.quantity])
 
   const canAdjustStock = role === 'super-admin' || role === 'housekeeper'
   const canManageItem = role === 'super-admin'

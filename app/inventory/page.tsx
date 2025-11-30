@@ -6,7 +6,7 @@ import { InventoryFilter, InventoryFilters } from '@/components/inventory/invent
 import { InventoryModal } from '@/components/inventory/inventory-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, Package, ClipboardCheck } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InventoryItem, InventoryMovement, UserRole } from '@/lib/types'
 import { useSessionUser } from '@/lib/use-session'
 
@@ -24,21 +24,21 @@ export default function InventoryPage() {
   const canManageInventory = user?.role === 'super-admin'
   const canAdjustStock = user?.role === 'super-admin' || user?.role === 'housekeeper'
 
-  useEffect(() => {
-    async function loadInventory() {
-      const response = await fetch('/api/inventory')
-      const data = await response.json()
-      const parsed = (data.items || []).map((item: any) => ({
-        ...item,
-        createdAt: new Date(item.createdAt),
-        lastRestocked: item.lastRestocked ? new Date(item.lastRestocked) : undefined,
-      }))
-      setItems(parsed)
-    }
+  const loadInventory = useCallback(async () => {
+    const response = await fetch('/api/inventory')
+    const data = await response.json()
+    const parsed = (data.items || []).map((item: any) => ({
+      ...item,
+      createdAt: new Date(item.createdAt),
+      lastRestocked: item.lastRestocked ? new Date(item.lastRestocked) : undefined,
+    }))
+    setItems(parsed)
+  }, [])
 
+  useEffect(() => {
     loadInventory()
     loadMovements()
-  }, [])
+  }, [loadInventory])
 
   async function loadMovements() {
     const response = await fetch('/api/inventory/movements')
@@ -112,7 +112,7 @@ export default function InventoryPage() {
 
     if (!item || change === 0) return
 
-    await fetch('/api/inventory/move', {
+    const response = await fetch('/api/inventory/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -123,14 +123,25 @@ export default function InventoryPage() {
         locationTo: item.location,
       }),
     })
+    const data = await response.json()
 
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === itemId ? { ...i, quantity: newQuantity, lastRestocked: new Date() } : i,
-      ),
-    )
+    if (!response.ok || data.error) {
+      alert(data.error || 'No se pudo actualizar el stock')
+      return
+    }
 
-    loadMovements()
+    if (data.item) {
+      const updated = {
+        ...data.item,
+        createdAt: data.item.createdAt ? new Date(data.item.createdAt) : undefined,
+        lastRestocked: data.item.lastRestocked ? new Date(data.item.lastRestocked) : undefined,
+      }
+      setItems((prev) => prev.map((i) => (i.id === itemId ? updated : i)))
+    } else {
+      await loadInventory()
+    }
+
+    await loadMovements()
   }
 
   const handlePhysicalCount = async (item: InventoryItem) => {
@@ -150,10 +161,17 @@ export default function InventoryPage() {
       body: JSON.stringify({ itemId: item.id, countedQuantity, location: item.location, userId: user?.id }),
     })
     const data = await response.json()
+    if (!response.ok || data.error) {
+      alert(data.error || 'No se pudo registrar el conteo físico')
+      return
+    }
+
     if (data.item) {
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...data.item, createdAt: new Date(data.item.createdAt) } : i)),
       )
+    } else {
+      await loadInventory()
     }
 
     loadMovements()
