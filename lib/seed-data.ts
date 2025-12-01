@@ -1,4 +1,15 @@
-import { Hotel, User, Room, Reservation, HousekeepingTask, InventoryItem, InventoryMovement, RolePermission } from './types'
+import {
+  Hotel,
+  User,
+  Room,
+  Reservation,
+  HousekeepingTask,
+  InventoryItem,
+  InventoryMovement,
+  RolePermission,
+  InventoryCategory,
+  InventoryLocation,
+} from './types'
 
 export const seedHotel: Hotel = {
   id: '1',
@@ -147,9 +158,54 @@ export const seedHousekeepingTasks: HousekeepingTask[] = [
 ]
 
 export const seedInventory: InventoryItem[] = [
-  { id: '1', hotelId: '1', name: 'Sábanas', category: 'linens', quantity: 45, minimumLevel: 50, unit: 'juegos', location: 'Habitaciones', createdAt: new Date() },
-  { id: '2', hotelId: '1', name: 'Toallas', category: 'linens', quantity: 120, minimumLevel: 80, unit: 'piezas', location: 'Lavandería', createdAt: new Date() },
-  { id: '3', hotelId: '1', name: 'Artículos de aseo', category: 'amenities', quantity: 30, minimumLevel: 50, unit: 'juegos', location: 'Bodegas de housekeeping', createdAt: new Date() },
+  {
+    id: '1',
+    hotelId: '1',
+    name: 'Sábanas',
+    category: 'linens',
+    categoryId: 'cat-lenceria',
+    quantity: 45,
+    minimumLevel: 50,
+    unit: 'juegos',
+    location: 'Habitaciones',
+    locationId: 'loc-habitaciones',
+    brand: 'Algodón Caribe',
+    serialInternal: 'LIN-001',
+    serial: 'SAB-1001',
+    createdAt: new Date(),
+  },
+  {
+    id: '2',
+    hotelId: '1',
+    name: 'Toallas',
+    category: 'linens',
+    categoryId: 'cat-lenceria',
+    quantity: 120,
+    minimumLevel: 80,
+    unit: 'piezas',
+    location: 'Lavandería',
+    locationId: 'loc-lavanderia',
+    brand: 'Mar Caribe',
+    serialInternal: 'LIN-002',
+    serial: 'TOW-2201',
+    createdAt: new Date(),
+  },
+  {
+    id: '3',
+    hotelId: '1',
+    name: 'Artículos de aseo',
+    category: 'amenities',
+    categoryId: 'cat-amenidades',
+    quantity: 30,
+    minimumLevel: 50,
+    unit: 'juegos',
+    location: 'Bodegas de housekeeping',
+    locationId: 'loc-bodega',
+    brand: 'Isla Limpia',
+    serialInternal: 'AME-001',
+    serial: 'KIT-3300',
+    createdAt: new Date(),
+  },
 ]
 
 export const seedInventoryMovements: InventoryMovement[] = [
@@ -163,4 +219,18 @@ export const seedInventoryMovements: InventoryMovement[] = [
     locationTo: 'Habitaciones',
     createdAt: new Date(),
   },
+]
+
+export const seedInventoryCategories: InventoryCategory[] = [
+  { id: 'cat-lenceria', name: 'Lencería', description: 'Sábanas, toallas y protectores', createdAt: new Date('2024-01-01') },
+  { id: 'cat-amenidades', name: 'Amenidades', description: 'Aseo, kits de baño, cortesía', createdAt: new Date('2024-01-01') },
+  { id: 'cat-equipos', name: 'Equipos', description: 'Herramientas y equipos de mantenimiento', createdAt: new Date('2024-01-01') },
+  { id: 'cat-suministros', name: 'Suministros', description: 'Papelería, limpieza y otros', createdAt: new Date('2024-01-01') },
+]
+
+export const seedInventoryLocations: InventoryLocation[] = [
+  { id: 'loc-habitaciones', name: 'Habitaciones', description: 'Habitaciones en operación', createdAt: new Date('2024-01-01') },
+  { id: 'loc-lavanderia', name: 'Lavandería', description: 'Área de lavado y secado', createdAt: new Date('2024-01-01') },
+  { id: 'loc-bodega', name: 'Bodega', description: 'Bodega principal de housekeeping', createdAt: new Date('2024-01-01') },
+  { id: 'loc-cocina', name: 'Cocina', description: 'Uso de cocina y restaurante', createdAt: new Date('2024-01-01') },
 ]

@@ -101,14 +101,33 @@ export interface InventoryItem {
   id: string;
   hotelId: string;
   name: string;
-  category: 'supplies' | 'amenities' | 'equipment' | 'linens';
+  category: 'supplies' | 'amenities' | 'equipment' | 'linens' | string;
+  categoryId?: string;
   quantity: number;
   minimumLevel: number;
   unit: string;
   supplier?: string;
+  brand?: string;
+  serialInternal?: string;
+  serial?: string;
   lastRestocked?: Date;
   createdAt: Date;
   location: string;
+  locationId?: string;
+}
+
+export interface InventoryCategory {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+}
+
+export interface InventoryLocation {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
 }
 
 export interface InventoryMovement {

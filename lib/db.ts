@@ -11,6 +11,8 @@ import {
   seedCollaborators,
   seedUser,
   seedRoles,
+  seedInventoryCategories,
+  seedInventoryLocations,
 } from './seed-data'
 import {
   Hotel,
@@ -22,6 +24,8 @@ import {
   Room,
   User,
   RolePermission,
+  InventoryCategory,
+  InventoryLocation,
 } from './types'
 
 const databasePath = process.env.SQLITE_PATH || path.join(process.cwd(), 'data', 'rinconcito.json')
@@ -36,6 +40,8 @@ type DbData = {
   housekeeping_history: (HousekeepingCompletion & { createdAt?: string })[]
   inventory: (InventoryItem & { createdAt: string })[]
   inventory_movements: (InventoryMovement & { createdAt: string })[]
+  inventory_categories: (InventoryCategory & { createdAt: string })[]
+  inventory_locations: (InventoryLocation & { createdAt: string })[]
   roles: (RolePermission & { createdAt: string })[]
   airbnb: {
     isConfigured: boolean
@@ -58,6 +64,8 @@ function loadData(): DbData {
       housekeeping_history: [],
       inventory: [],
       inventory_movements: [],
+      inventory_categories: [],
+      inventory_locations: [],
       roles: [],
       airbnb: {
         isConfigured: true,
@@ -151,6 +159,20 @@ function seedIfNeeded() {
     updated = true
   }
 
+  if (dbData.inventory_categories.length === 0) {
+    dbData.inventory_categories.push(
+      ...seedInventoryCategories.map((category) => ({ ...category, createdAt: category.createdAt.toISOString() })),
+    )
+    updated = true
+  }
+
+  if (dbData.inventory_locations.length === 0) {
+    dbData.inventory_locations.push(
+      ...seedInventoryLocations.map((location) => ({ ...location, createdAt: location.createdAt.toISOString() })),
+    )
+    updated = true
+  }
+
   if (dbData.roles.length === 0) {
     dbData.roles.push(...seedRoles.map((role) => ({ ...role, createdAt: role.createdAt.toISOString() })))
     updated = true
@@ -218,6 +240,18 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((item) => mapDate(item)) as T[]
   }
 
+  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_categories')) {
+    return [...dbData.inventory_categories]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((cat) => mapDate(cat)) as T[]
+  }
+
+  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_locations')) {
+    return [...dbData.inventory_locations]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((loc) => mapDate(loc)) as T[]
+  }
+
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_movements')) {
     return [...dbData.inventory_movements]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -263,7 +297,22 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       return []
     }
 
-    const [name, category, quantity, minimumLevel, unit, supplier, location, lastRestocked, id] = values
+    const [
+      name,
+      category,
+      quantity,
+      minimumLevel,
+      unit,
+      supplier,
+      location,
+      lastRestocked,
+      brand,
+      serialInternal,
+      serial,
+      categoryId,
+      locationId,
+      id,
+    ] = values
     const idx = dbData.inventory.findIndex((item) => item.id === id)
     if (idx !== -1) {
       dbData.inventory[idx] = {
@@ -276,6 +325,11 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
         supplier,
         location,
         lastRestocked,
+        brand,
+        serialInternal,
+        serial,
+        categoryId,
+        locationId,
       }
       saveData(dbData)
     }
@@ -357,7 +411,24 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   }
 
   if (sql.startsWith('INSERT INTO inventory')) {
-    const [id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, createdAt] = values
+    const [
+      id,
+      hotelId,
+      name,
+      category,
+      quantity,
+      minimumLevel,
+      unit,
+      supplier,
+      lastRestocked,
+      location,
+      brand,
+      serialInternal,
+      serial,
+      categoryId,
+      locationId,
+      createdAt,
+    ] = values
     dbData.inventory.push({
       id,
       hotelId,
@@ -369,8 +440,63 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       supplier,
       lastRestocked,
       location,
+      brand,
+      serialInternal,
+      serial,
+      categoryId,
+      locationId,
       createdAt,
     })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO inventory_categories')) {
+    const [id, name, description, createdAt] = values
+    dbData.inventory_categories.push({ id, name, description, createdAt })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE inventory_categories SET')) {
+    const [name, description, id] = values
+    const idx = dbData.inventory_categories.findIndex((cat) => cat.id === id)
+    if (idx !== -1) {
+      dbData.inventory_categories[idx] = { ...dbData.inventory_categories[idx], name, description }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM inventory_categories')) {
+    const [id] = values
+    dbData.inventory_categories = dbData.inventory_categories.filter((cat) => cat.id !== id)
+    dbData.inventory = dbData.inventory.map((item) => (item.categoryId === id ? { ...item, categoryId: undefined } : item))
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO inventory_locations')) {
+    const [id, name, description, createdAt] = values
+    dbData.inventory_locations.push({ id, name, description, createdAt })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE inventory_locations SET')) {
+    const [name, description, id] = values
+    const idx = dbData.inventory_locations.findIndex((loc) => loc.id === id)
+    if (idx !== -1) {
+      dbData.inventory_locations[idx] = { ...dbData.inventory_locations[idx], name, description }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM inventory_locations')) {
+    const [id] = values
+    dbData.inventory_locations = dbData.inventory_locations.filter((loc) => loc.id !== id)
+    dbData.inventory = dbData.inventory.map((item) => (item.locationId === id ? { ...item, locationId: undefined } : item))
     saveData(dbData)
     return []
   }

@@ -11,40 +11,54 @@ interface InventoryModalProps {
   isOpen: boolean
   onClose: () => void
   onSave?: (item: InventoryItem) => Promise<void> | void
+  categories?: { id: string; name: string }[]
+  locations?: { id: string; name: string }[]
 }
 
-export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModalProps) {
+export function InventoryModal({ item, isOpen, onClose, onSave, categories = [], locations = [] }: InventoryModalProps) {
   const [formData, setFormData] = useState<InventoryItem>(
     item || {
       id: '',
       hotelId: '1',
       name: '',
       category: 'supplies',
+      categoryId: '',
       quantity: 0,
       minimumLevel: 10,
       unit: 'units',
       location: 'Bodega',
+      locationId: '',
+      brand: '',
+      serialInternal: '',
+      serial: '',
       createdAt: new Date(),
     }
   )
 
   useEffect(() => {
     if (isOpen) {
+      const defaultCategory = categories[0]
+      const defaultLocation = locations[0]
       setFormData(
         item || {
           id: '',
           hotelId: '1',
           name: '',
-          category: 'supplies',
+          category: defaultCategory?.name || 'supplies',
+          categoryId: defaultCategory?.id || '',
           quantity: 0,
           minimumLevel: 10,
           unit: 'units',
-          location: 'Bodega',
+          location: defaultLocation?.name || 'Bodega',
+          locationId: defaultLocation?.id || '',
+          brand: '',
+          serialInternal: '',
+          serial: '',
           createdAt: new Date(),
         },
       )
     }
-  }, [item, isOpen])
+  }, [item, isOpen, categories, locations])
 
   if (!isOpen) return null
 
@@ -84,14 +98,22 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
                 <div>
                   <label className="block text-sm font-medium mb-1">Categoría</label>
                   <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as InventoryItem['category'] })}
+                    value={formData.categoryId || formData.category}
+                    onChange={(e) => {
+                      const selected = categories.find((cat) => cat.id === e.target.value)
+                      setFormData({
+                        ...formData,
+                        categoryId: selected?.id,
+                        category: selected?.name || e.target.value,
+                      })
+                    }}
                     className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="supplies">Suministros</option>
-                    <option value="amenities">Amenidades</option>
-                    <option value="equipment">Equipos</option>
-                    <option value="linens">Lencería</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -108,14 +130,24 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
 
               <div>
                 <label className="block text-sm font-medium mb-1">Ubicación</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                <select
+                  value={formData.locationId || formData.location}
+                  onChange={(e) => {
+                    const selected = locations.find((loc) => loc.id === e.target.value)
+                    setFormData({
+                      ...formData,
+                      locationId: selected?.id,
+                      location: selected?.name || e.target.value,
+                    })
+                  }}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Habitación, cocina, bodega"
-                  required
-                />
+                >
+                  {locations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -157,6 +189,40 @@ export function InventoryModal({ item, isOpen, onClose, onSave }: InventoryModal
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Supplier name"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Marca</label>
+                  <input
+                    type="text"
+                    value={formData.brand || ''}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Marca o fabricante"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Serial interno</label>
+                  <input
+                    type="text"
+                    value={formData.serialInternal || ''}
+                    onChange={(e) => setFormData({ ...formData, serialInternal: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Código interno"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Serial/IMEI</label>
+                <input
+                  type="text"
+                  value={formData.serial || ''}
+                  onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Serial externo"
                 />
               </div>
             </div>

@@ -14,7 +14,7 @@ function mapItem(row: any): InventoryItem {
 
 export async function GET() {
   const items = await query<InventoryItem>(
-    'SELECT id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, createdAt FROM inventory ORDER BY name ASC',
+    'SELECT id, hotelId, name, category, categoryId, quantity, minimumLevel, unit, supplier, brand, serialInternal, serial, lastRestocked, location, locationId, createdAt FROM inventory ORDER BY name ASC',
   )
   return NextResponse.json({ items: items.map(mapItem) })
 }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const createdAt = new Date().toISOString()
 
   await query(
-    'INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, brand, serialInternal, serial, categoryId, locationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       id,
       body.hotelId || '1',
@@ -43,6 +43,11 @@ export async function POST(request: Request) {
       body.supplier || '',
       body.lastRestocked || createdAt,
       body.location || 'Bodega',
+      body.brand || '',
+      body.serialInternal || '',
+      body.serial || '',
+      body.categoryId || '',
+      body.locationId || '',
       createdAt,
     ],
   )
@@ -71,7 +76,7 @@ export async function PUT(request: Request) {
   }
 
   await query(
-    'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ? WHERE id = ?',
+    'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ?, brand = ?, serialInternal = ?, serial = ?, categoryId = ?, locationId = ? WHERE id = ?',
     [
       body.name || existing.name,
       body.category || existing.category,
@@ -81,6 +86,11 @@ export async function PUT(request: Request) {
       body.supplier ?? existing.supplier,
       body.location || existing.location,
       body.lastRestocked || existing.lastRestocked || new Date().toISOString(),
+      body.brand ?? existing.brand ?? '',
+      body.serialInternal ?? existing.serialInternal ?? '',
+      body.serial ?? existing.serial ?? '',
+      body.categoryId ?? existing.categoryId ?? '',
+      body.locationId ?? existing.locationId ?? '',
       body.id,
     ],
   )

@@ -5,14 +5,18 @@ import { InventoryCard } from '@/components/inventory/inventory-card'
 import { InventoryFilter, InventoryFilters } from '@/components/inventory/inventory-filter'
 import { InventoryModal } from '@/components/inventory/inventory-modal'
 import { Button } from '@/components/ui/button'
-import { Plus, Package, ClipboardCheck } from 'lucide-react'
+import { Plus, Package, ClipboardCheck, LayoutGrid, List } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { InventoryItem, InventoryMovement, UserRole } from '@/lib/types'
+import { InventoryCategory, InventoryItem, InventoryLocation, InventoryMovement, UserRole } from '@/lib/types'
 import { useSessionUser } from '@/lib/use-session'
 import Link from 'next/link'
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
+  const [categories, setCategories] = useState<InventoryCategory[]>([])
+  const [locations, setLocations] = useState<InventoryLocation[]>([])
+  const [categoryForm, setCategoryForm] = useState<{ id?: string; name: string; description?: string }>({ name: '' })
+  const [locationForm, setLocationForm] = useState<{ id?: string; name: string; description?: string }>({ name: '' })
   const [movements, setMovements] = useState<(InventoryMovement & { itemName?: string; userName?: string })[]>([])
   const [filters, setFilters] = useState<InventoryFilters>({
     search: '',
@@ -21,6 +25,7 @@ export default function InventoryPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>()
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const { user } = useSessionUser()
   const canManageInventory = user?.role === 'super-admin'
   const canAdjustStock = user?.role === 'super-admin'
@@ -36,10 +41,26 @@ export default function InventoryPage() {
     setItems(parsed)
   }, [])
 
+  const loadCategories = useCallback(async () => {
+    const response = await fetch('/api/inventory/categories')
+    const data = await response.json()
+    const parsed = (data.categories || []).map((cat: any) => ({ ...cat, createdAt: new Date(cat.createdAt) }))
+    setCategories(parsed)
+  }, [])
+
+  const loadLocations = useCallback(async () => {
+    const response = await fetch('/api/inventory/locations')
+    const data = await response.json()
+    const parsed = (data.locations || []).map((loc: any) => ({ ...loc, createdAt: new Date(loc.createdAt) }))
+    setLocations(parsed)
+  }, [])
+
   useEffect(() => {
     loadInventory()
     loadMovements()
-  }, [loadInventory])
+    loadCategories()
+    loadLocations()
+  }, [loadInventory, loadCategories, loadLocations])
 
   async function loadMovements() {
     const response = await fetch('/api/inventory/movements')
@@ -54,7 +75,8 @@ export default function InventoryPage() {
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const matchesSearch = item.name.toLowerCase().includes(filters.search.toLowerCase())
-      const matchesCategory = filters.category === 'all' || item.category === filters.category
+      const matchesCategory =
+        filters.category === 'all' || item.categoryId === filters.category || item.category === filters.category
 
       let matchesStockStatus = true
       if (filters.stockStatus === 'low') {
@@ -194,20 +216,99 @@ export default function InventoryPage() {
   }
 
   const handleAddItem = () => {
-    setSelectedItem(undefined)
+    if (!canManageInventory) {
+      alert('Solo el super administrador puede crear artículos')
+      return
+    }
+    setSelectedItem({
+      id: '',
+      hotelId: '1',
+      name: '',
+      category: categories[0]?.name || 'supplies',
+      categoryId: categories[0]?.id || '',
+      quantity: 0,
+      minimumLevel: 10,
+      unit: 'units',
+      supplier: '',
+      brand: '',
+      serialInternal: '',
+      serial: '',
+      location: locations[0]?.name || 'Bodega',
+      locationId: locations[0]?.id || '',
+      createdAt: new Date(),
+    })
     setIsModalOpen(true)
+  }
+
+  const promptAdjust = (item: InventoryItem) => {
+    const newQuantity = window.prompt(`Cantidad para ${item.name}`, `${item.quantity}`)
+    if (newQuantity === null) return
+    const parsed = Number(newQuantity)
+    if (Number.isNaN(parsed)) return
+    handleUpdateStock(item.id, parsed)
+  }
+
+  const handleSaveCategory = async () => {
+    if (!canManageInventory) {
+      alert('Solo el super administrador puede administrar categorías')
+      return
+    }
+    if (!categoryForm.name) return
+    const isEditing = Boolean(categoryForm.id)
+    const response = await fetch('/api/inventory/categories', {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(categoryForm),
+    })
+    const data = await response.json()
+    if (data.error) return alert(data.error)
+    await loadCategories()
+    setCategoryForm({ name: '' })
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!canManageInventory) return
+    await fetch('/api/inventory/categories', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    await loadCategories()
+  }
+
+  const handleSaveLocation = async () => {
+    if (!canManageInventory) {
+      alert('Solo el super administrador puede administrar sitios')
+      return
+    }
+    if (!locationForm.name) return
+    const isEditing = Boolean(locationForm.id)
+    const response = await fetch('/api/inventory/locations', {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(locationForm),
+    })
+    const data = await response.json()
+    if (data.error) return alert(data.error)
+    await loadLocations()
+    setLocationForm({ name: '' })
+  }
+
+  const handleDeleteLocation = async (id: string) => {
+    if (!canManageInventory) return
+    await fetch('/api/inventory/locations', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    await loadLocations()
   }
 
   // Statistics
   const stats = {
     total: items.length,
     lowStock: items.filter((i) => i.quantity <= i.minimumLevel).length,
-    categories: {
-      supplies: items.filter((i) => i.category === 'supplies').length,
-      amenities: items.filter((i) => i.category === 'amenities').length,
-      equipment: items.filter((i) => i.category === 'equipment').length,
-      linens: items.filter((i) => i.category === 'linens').length,
-    },
+    categories: categories.length,
   }
 
   return (
@@ -244,7 +345,7 @@ export default function InventoryPage() {
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-primary">{stats.total}</p>
               <p className="text-xs text-muted-foreground mt-1">Total artículos</p>
@@ -254,35 +355,45 @@ export default function InventoryPage() {
               <p className="text-xs text-muted-foreground mt-1">Stock bajo</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{stats.categories.supplies}</p>
-              <p className="text-xs text-muted-foreground mt-1">Suministros</p>
+              <p className="text-2xl font-bold text-primary">{categories.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">Categorías</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{stats.categories.amenities}</p>
-              <p className="text-xs text-muted-foreground mt-1">Amenidades</p>
-            </div>
-            <div className="bg-card border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{stats.categories.equipment}</p>
-              <p className="text-xs text-muted-foreground mt-1">Equipos</p>
-            </div>
-            <div className="bg-card border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{stats.categories.linens}</p>
-              <p className="text-xs text-muted-foreground mt-1">Lencería</p>
+              <p className="text-2xl font-bold text-primary">{locations.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">Sitios</p>
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="mb-6">
-            <InventoryFilter onFilterChange={setFilters} />
+          {/* Filters and view mode */}
+          <div className="mb-6 flex flex-col gap-4">
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="gap-2"
+              >
+                <LayoutGrid size={16} /> Cuadrícula
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2"
+              >
+                <List size={16} /> Lista
+              </Button>
+            </div>
+            <InventoryFilter onFilterChange={setFilters} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
           </div>
 
-          {/* Inventory Grid */}
+          {/* Inventory View */}
           {filteredItems.length === 0 ? (
             <div className="text-center py-12">
               <Package size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
               <p className="text-muted-foreground">No hay artículos que coincidan con los filtros</p>
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item) => (
                 <InventoryCard
@@ -295,6 +406,52 @@ export default function InventoryPage() {
                   role={user?.role as UserRole}
                 />
               ))}
+            </div>
+          ) : (
+            <div className="bg-card border rounded-lg overflow-hidden">
+              <div className="grid grid-cols-8 bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
+                <span>Artículo</span>
+                <span>Categoría</span>
+                <span>Sitio</span>
+                <span>Marca</span>
+                <span>Serial interno</span>
+                <span>Serial</span>
+                <span>Cantidad</span>
+                <span>Acciones</span>
+              </div>
+              <div className="divide-y">
+                {filteredItems.map((item) => (
+                  <div key={item.id} className="grid grid-cols-8 items-center px-4 py-3 text-sm gap-2">
+                    <div>
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">Mínimo {item.minimumLevel}</p>
+                    </div>
+                    <span>{item.category}</span>
+                    <span>{item.location}</span>
+                    <span>{item.brand || '-'}</span>
+                    <span>{item.serialInternal || '-'}</span>
+                    <span>{item.serial || '-'}</span>
+                    <div className="font-bold text-primary">{item.quantity}</div>
+                    <div className="flex gap-2 flex-wrap justify-end">
+                      {canAdjustStock && (
+                        <Button size="sm" variant="outline" onClick={() => promptAdjust(item)}>
+                          Ajustar
+                        </Button>
+                      )}
+                      {canManageInventory && (
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
+                          Editar
+                        </Button>
+                      )}
+                      {user?.role === 'colaborador' && (
+                        <Button size="sm" variant="destructive" onClick={() => handleUseOne(item)}>
+                          Usar 1
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -328,6 +485,90 @@ export default function InventoryPage() {
               </div>
             )}
           </div>
+
+          {canManageInventory && (
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-card border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Categorías</h3>
+                  <Button size="sm" onClick={handleSaveCategory}>
+                    {categoryForm.id ? 'Actualizar' : 'Agregar'}
+                  </Button>
+                </div>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-border rounded-lg"
+                  placeholder="Nombre de categoría"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                />
+                <textarea
+                  className="w-full px-3 py-2 border border-border rounded-lg"
+                  placeholder="Descripción"
+                  value={categoryForm.description || ''}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                />
+                <div className="divide-y max-h-56 overflow-y-auto">
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="py-2 flex items-center justify-between text-sm">
+                      <div>
+                        <p className="font-semibold">{cat.name}</p>
+                        <p className="text-xs text-muted-foreground">{cat.description}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setCategoryForm(cat)}>
+                          Editar
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(cat.id)}>
+                          Borrar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-card border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Sitios</h3>
+                  <Button size="sm" onClick={handleSaveLocation}>
+                    {locationForm.id ? 'Actualizar' : 'Agregar'}
+                  </Button>
+                </div>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-border rounded-lg"
+                  placeholder="Nombre del sitio"
+                  value={locationForm.name}
+                  onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
+                />
+                <textarea
+                  className="w-full px-3 py-2 border border-border rounded-lg"
+                  placeholder="Descripción"
+                  value={locationForm.description || ''}
+                  onChange={(e) => setLocationForm({ ...locationForm, description: e.target.value })}
+                />
+                <div className="divide-y max-h-56 overflow-y-auto">
+                  {locations.map((loc) => (
+                    <div key={loc.id} className="py-2 flex items-center justify-between text-sm">
+                      <div>
+                        <p className="font-semibold">{loc.name}</p>
+                        <p className="text-xs text-muted-foreground">{loc.description}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setLocationForm(loc)}>
+                          Editar
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteLocation(loc.id)}>
+                          Borrar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -339,6 +580,8 @@ export default function InventoryPage() {
           setSelectedItem(undefined)
         }}
         onSave={handleSaveItem}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        locations={locations.map((l) => ({ id: l.id, name: l.name }))}
       />
     </div>
   )

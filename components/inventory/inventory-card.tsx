@@ -41,6 +41,8 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, on
   const canManageItem = role === 'super-admin'
   const canUseOne = role === 'colaborador'
 
+  const icon = categoryIcons[item.category as keyof typeof categoryIcons] || '📦'
+  const label = categoryLabels[item.category as keyof typeof categoryLabels] || item.category
   const isLowStock = item.quantity <= item.minimumLevel
   const stockPercentage = Math.min((item.quantity / (item.minimumLevel * 2)) * 100, 100)
 
@@ -53,11 +55,16 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, on
     <Card className={`p-6 hover:shadow-lg transition-all ${isLowStock ? 'border-destructive/50' : ''}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">{categoryIcons[item.category]}</span>
+          <span className="text-2xl">{icon}</span>
           <div>
             <h3 className="text-lg font-bold text-foreground">{item.name}</h3>
-            <p className="text-xs text-muted-foreground">{categoryLabels[item.category]}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
             <p className="text-xs text-muted-foreground">Ubicación: {item.location}</p>
+            {(item.brand || item.serialInternal || item.serial) && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {item.brand && <span className="font-semibold">{item.brand}</span>} {item.serialInternal || ''} {item.serial || ''}
+              </p>
+            )}
           </div>
         </div>
         {isLowStock && (
