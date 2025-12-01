@@ -75,7 +75,21 @@ export async function POST(request: Request) {
   )
 
   const item = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [id])
-  return NextResponse.json({ item: item ? mapItem(item) : null })
+
+  const safeItem =
+    item ||
+    mapItem({
+      ...body,
+      id,
+      createdAt,
+      customAttributes: body.customAttributes || {},
+      quantity: body.quantity || 0,
+      minimumLevel: body.minimumLevel || 0,
+      unit: body.unit || 'unidades',
+      location: body.location || 'Bodega',
+    })
+
+  return NextResponse.json({ item: safeItem })
 }
 
 export async function PUT(request: Request) {
