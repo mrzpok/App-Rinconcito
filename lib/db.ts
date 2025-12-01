@@ -54,30 +54,54 @@ type DbData = {
 }
 
 function loadData(): DbData {
-  if (!fs.existsSync(databasePath)) {
-    return {
-      hotels: [],
-      users: [],
-      rooms: [],
-      reservations: [],
-      housekeeping_tasks: [],
-      housekeeping_history: [],
-      inventory: [],
-      inventory_movements: [],
-      inventory_categories: [],
-      inventory_locations: [],
-      roles: [],
-      airbnb: {
-        isConfigured: true,
-        iCalUrl:
-          'https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d',
-        lastSyncStatus: 'nunca',
-        syncLogs: [],
-      },
-    }
+  const base: DbData = {
+    hotels: [],
+    users: [],
+    rooms: [],
+    reservations: [],
+    housekeeping_tasks: [],
+    housekeeping_history: [],
+    inventory: [],
+    inventory_movements: [],
+    inventory_categories: [],
+    inventory_locations: [],
+    roles: [],
+    airbnb: {
+      isConfigured: true,
+      iCalUrl:
+        'https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d',
+      lastSyncStatus: 'nunca',
+      syncLogs: [],
+    },
   }
+
+  if (!fs.existsSync(databasePath)) {
+    return base
+  }
+
   const raw = fs.readFileSync(databasePath, 'utf8')
-  return JSON.parse(raw) as DbData
+  const parsed = JSON.parse(raw) as Partial<DbData>
+
+  return {
+    ...base,
+    ...parsed,
+    hotels: parsed.hotels ?? base.hotels,
+    users: parsed.users ?? base.users,
+    rooms: parsed.rooms ?? base.rooms,
+    reservations: parsed.reservations ?? base.reservations,
+    housekeeping_tasks: parsed.housekeeping_tasks ?? base.housekeeping_tasks,
+    housekeeping_history: parsed.housekeeping_history ?? base.housekeeping_history,
+    inventory: parsed.inventory ?? base.inventory,
+    inventory_movements: parsed.inventory_movements ?? base.inventory_movements,
+    inventory_categories: parsed.inventory_categories ?? base.inventory_categories,
+    inventory_locations: parsed.inventory_locations ?? base.inventory_locations,
+    roles: parsed.roles ?? base.roles,
+    airbnb: {
+      ...base.airbnb,
+      ...parsed.airbnb,
+      syncLogs: parsed.airbnb?.syncLogs ?? base.airbnb.syncLogs,
+    },
+  }
 }
 
 function saveData(data: DbData) {
