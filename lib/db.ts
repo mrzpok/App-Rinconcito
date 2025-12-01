@@ -259,12 +259,6 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((reservation) => mapDate(reservation)) as T[]
   }
 
-  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory')) {
-    return [...dbData.inventory]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((item) => mapDate({ ...item, customAttributes: item.customAttributes || {} })) as T[]
-  }
-
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_categories')) {
     return [...dbData.inventory_categories]
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -281,6 +275,12 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return [...dbData.inventory_movements]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((movement) => mapDate(movement)) as T[]
+  }
+
+  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory')) {
+    return [...dbData.inventory]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((item) => mapDate({ ...item, customAttributes: item.customAttributes || {} })) as T[]
   }
 
   if (normalized.startsWith('SELECT') && sql.includes('FROM housekeeping_tasks')) {
