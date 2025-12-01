@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session || session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Solo el super administrador puede crear inventario' }, { status: 403 })
   }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const body = await request.json()

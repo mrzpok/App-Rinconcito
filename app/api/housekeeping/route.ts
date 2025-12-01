@@ -37,7 +37,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session || !['super-admin', 'housekeeper'].includes(session.role)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
   }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }

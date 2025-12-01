@@ -39,9 +39,10 @@ export default function AdminPage() {
       setLoadingUsers(true)
       setLoadError('')
       try {
+        const authHeaders = user ? { 'x-rinconcito-session': JSON.stringify(user) } : undefined
         const [usersRes, rolesRes] = await Promise.all([
-          fetch('/api/users', { credentials: 'include' }),
-          fetch('/api/roles', { credentials: 'include' }),
+          fetch('/api/users', { credentials: 'include', headers: authHeaders }),
+          fetch('/api/roles', { credentials: 'include', headers: authHeaders }),
         ])
         if (!usersRes.ok || !rolesRes.ok) {
           const message =
@@ -73,7 +74,10 @@ export default function AdminPage() {
     const payload = { ...existing, ...partial }
     const response = await fetch('/api/users', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+      },
       credentials: 'include',
       body: JSON.stringify({
         id,
@@ -224,7 +228,11 @@ export default function AdminPage() {
                           onClick={async () => {
                             await fetch('/api/users', {
                               method: 'DELETE',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                              },
+                              credentials: 'include',
                               body: JSON.stringify({ id: u.id }),
                             })
                             setUsers((prev) => prev.filter((userRow) => userRow.id !== u.id))
@@ -280,7 +288,10 @@ export default function AdminPage() {
                 onClick={async () => {
                   const response = await fetch('/api/users', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                    },
                     credentials: 'include',
                     body: JSON.stringify({ ...newUser }),
                   })
@@ -357,12 +368,15 @@ export default function AdminPage() {
                   disabled={!selectedUserId}
                   onClick={async () => {
                     if (!selectedUserId) return
-                    await fetch('/api/users', {
-                      method: 'DELETE',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'include',
-                      body: JSON.stringify({ id: selectedUserId }),
-                    })
+                  await fetch('/api/users', {
+                    method: 'DELETE',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ id: selectedUserId }),
+                  })
                     setUsers((prev) => prev.filter((u) => u.id !== selectedUserId))
                     setSelectedUserId(null)
                     setEditUser({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
@@ -391,7 +405,10 @@ export default function AdminPage() {
                       onClick={async () => {
                         await fetch('/api/roles', {
                           method: 'DELETE',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                          },
                           credentials: 'include',
                           body: JSON.stringify({ id: role.id }),
                         })
@@ -417,7 +434,10 @@ export default function AdminPage() {
                             const updated = { ...role, [perm.key]: e.target.checked }
                             await fetch('/api/roles', {
                               method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                              },
                               credentials: 'include',
                               body: JSON.stringify(updated),
                             })
@@ -463,7 +483,10 @@ export default function AdminPage() {
                 onClick={async () => {
                   const response = await fetch('/api/roles', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                    },
                     credentials: 'include',
                     body: JSON.stringify(newRole),
                   })

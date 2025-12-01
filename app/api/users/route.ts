@@ -8,8 +8,8 @@ function mapUser(row: any): User {
   return { ...row, active: Boolean(row.active), createdAt: new Date(row.createdAt) }
 }
 
-export async function GET() {
-  const session = getServerSession()
+export async function GET(request: Request) {
+  const session = getServerSession(request)
   if (!session || session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Solo el super administrador puede listar usuarios' }, { status: 403 })
   }
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session || session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Solo el super administrador puede crear usuarios' }, { status: 403 })
   }
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session || session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Sin permisos para editar usuarios' }, { status: 403 })
   }
@@ -78,7 +78,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session || session.role !== 'super-admin') {
     return NextResponse.json({ error: 'Solo el super administrador puede eliminar usuarios' }, { status: 403 })
   }

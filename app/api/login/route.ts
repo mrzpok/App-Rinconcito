@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   const session: SessionUser = { id: user.id, name: user.name, role: user.role }
   const response = NextResponse.json({ user: session })
-  response.cookies.set('rinconcito_session', JSON.stringify(session), {
+  response.cookies.set('rinconcito_session', encodeURIComponent(JSON.stringify(session)), {
     httpOnly: false,
     secure: false,
     sameSite: 'lax',

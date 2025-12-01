@@ -3,7 +3,7 @@ import { query } from '@/lib/db'
 import { getServerSession } from '@/lib/server-session'
 
 export async function POST(request: Request) {
-  const session = getServerSession()
+  const session = getServerSession(request)
   if (!session) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
