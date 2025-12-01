@@ -228,6 +228,7 @@ function mapDate<
     lastCleaned?: string
     completedAt?: string
     lastRestocked?: string
+    deletedAt?: string
   },
 >(
   record: T,
@@ -240,6 +241,7 @@ function mapDate<
   if (record.lastCleaned) mapped.lastCleaned = new Date(record.lastCleaned)
   if (record.completedAt) mapped.completedAt = new Date(record.completedAt)
   if (record.lastRestocked) mapped.lastRestocked = new Date(record.lastRestocked)
+  if ((record as any).deletedAt) mapped.deletedAt = new Date((record as any).deletedAt)
   return mapped
 }
 
@@ -279,6 +281,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
 
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory')) {
     return [...dbData.inventory]
+      .filter((item) => !item.deleted)
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((item) => mapDate({ ...item, customAttributes: item.customAttributes || {} })) as T[]
   }
@@ -357,6 +360,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
         categoryId,
         locationId,
         customAttributes: customAttributes || {},
+        deleted: dbData.inventory[idx].deleted || false,
       }
       saveData(dbData)
     }
@@ -474,6 +478,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       categoryId,
       locationId,
       customAttributes: customAttributes || {},
+      deleted: false,
       createdAt,
     })
     saveData(dbData)
@@ -502,6 +507,21 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     dbData.inventory_categories = dbData.inventory_categories.filter((cat) => cat.id !== id)
     dbData.inventory = dbData.inventory.map((item) => (item.categoryId === id ? { ...item, categoryId: undefined } : item))
     saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM inventory WHERE id = ?')) {
+    const [id] = values
+    const idx = dbData.inventory.findIndex((item) => item.id === id)
+    if (idx !== -1) {
+      const item = dbData.inventory[idx]
+      if (Number(item.quantity) > 0) {
+        dbData.inventory[idx] = { ...item, deleted: true, deletedAt: new Date().toISOString() }
+      } else {
+        dbData.inventory = dbData.inventory.filter((inv) => inv.id !== id)
+      }
+      saveData(dbData)
+    }
     return []
   }
 

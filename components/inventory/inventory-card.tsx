@@ -12,6 +12,7 @@ interface InventoryCardProps {
   onUpdateStock?: (itemId: string, quantity: number) => void
   onPhysicalCount?: () => void
   onUseOne?: () => void
+  onDelete?: (item: InventoryItem) => void
   role?: UserRole
 }
 
@@ -29,7 +30,7 @@ const categoryLabels = {
   linens: 'Lencería',
 }
 
-export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, onUseOne, role }: InventoryCardProps) {
+export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, onUseOne, onDelete, role }: InventoryCardProps) {
   const [editMode, setEditMode] = useState(false)
   const [newQuantity, setNewQuantity] = useState(item.quantity)
 
@@ -166,6 +167,12 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, on
             >
               <Edit2 size={16} />
               Editar
+            </Button>
+          )}
+
+          {canManageItem && onDelete && (
+            <Button variant="destructive" size="sm" className="flex-1" onClick={() => onDelete(item)}>
+              Eliminar
             </Button>
           )}
 

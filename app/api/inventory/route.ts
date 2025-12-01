@@ -10,6 +10,8 @@ function mapItem(row: any): InventoryItem {
     customAttributes: row.customAttributes || {},
     createdAt: new Date(row.createdAt),
     lastRestocked: row.lastRestocked ? new Date(row.lastRestocked) : undefined,
+    deleted: Boolean(row.deleted),
+    deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined,
   }
 }
 
@@ -18,6 +20,24 @@ export async function GET() {
     'SELECT id, hotelId, name, category, categoryId, quantity, minimumLevel, unit, supplier, brand, serialInternal, serial, customAttributes, lastRestocked, location, locationId, createdAt FROM inventory ORDER BY name ASC',
   )
   return NextResponse.json({ items: items.map(mapItem) })
+}
+
+export async function DELETE(request: Request) {
+  const session = getServerSession(request)
+  if (!session || session.role !== 'super-admin') {
+    return NextResponse.json({ error: 'Solo el super administrador puede borrar artículos' }, { status: 403 })
+  }
+
+  const body = await request.json()
+  if (!body.id) return NextResponse.json({ error: 'Falta el ID del artículo' }, { status: 400 })
+
+  const existing = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [body.id])
+  if (!existing) return NextResponse.json({ error: 'Artículo no encontrado' }, { status: 404 })
+
+  const softDeleted = (existing.quantity ?? 0) > 0
+  await query('DELETE FROM inventory WHERE id = ?', [body.id])
+
+  return NextResponse.json({ deleted: !softDeleted, softDeleted })
 }
 
 export async function POST(request: Request) {

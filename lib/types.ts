@@ -115,6 +115,8 @@ export interface InventoryItem {
   createdAt: Date;
   location: string;
   locationId?: string;
+  deleted?: boolean;
+  deletedAt?: Date;
 }
 
 export interface InventoryCategory {

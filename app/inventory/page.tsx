@@ -30,6 +30,14 @@ export default function InventoryPage() {
   const canManageInventory = user?.role === 'super-admin'
   const canAdjustStock = user?.role === 'super-admin'
 
+  const sessionHeaders = useCallback(() => {
+    const cookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('rinconcito_session='))
+    const session = cookie ? cookie.split('=')[1] : ''
+    return session ? { 'x-rinconcito-session': decodeURIComponent(session) } : {}
+  }, [])
+
   const loadInventory = useCallback(async () => {
     const response = await fetch('/api/inventory')
     const data = await response.json()
@@ -95,6 +103,34 @@ export default function InventoryPage() {
     setIsModalOpen(true)
   }
 
+  const handleDeleteItem = async (item: InventoryItem) => {
+    if (!canManageInventory) {
+      alert('Solo el super administrador puede eliminar artículos')
+      return
+    }
+
+    const confirmDelete = window.confirm(
+      item.quantity > 0
+        ? 'El artículo tiene existencias. Se marcará como eliminado, ¿continuar?'
+        : '¿Eliminar este artículo definitivamente?',
+    )
+    if (!confirmDelete) return
+
+    const response = await fetch('/api/inventory', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      body: JSON.stringify({ id: item.id }),
+    })
+    const data = await response.json()
+    if (!response.ok || data.error) {
+      alert(data.error || 'No se pudo eliminar el artículo')
+      return
+    }
+
+    setItems((prev) => prev.filter((i) => i.id !== item.id))
+    await loadMovements()
+  }
+
   const handleSaveItem = async (updatedItem: InventoryItem) => {
     const isEditing = Boolean(selectedItem)
     if (user?.role !== 'super-admin') {
@@ -104,7 +140,7 @@ export default function InventoryPage() {
 
     const response = await fetch('/api/inventory', {
       method: isEditing ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({ ...updatedItem, id: selectedItem?.id }),
     })
     const data = await response.json()
@@ -138,7 +174,7 @@ export default function InventoryPage() {
 
     const response = await fetch('/api/inventory/move', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({
         itemId,
         change,
@@ -181,7 +217,7 @@ export default function InventoryPage() {
 
     const response = await fetch('/api/inventory/physical', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({ itemId: item.id, countedQuantity, location: item.location, userId: user?.id }),
     })
     const data = await response.json()
@@ -204,7 +240,7 @@ export default function InventoryPage() {
   const handleUseOne = async (item: InventoryItem) => {
     const response = await fetch('/api/inventory/move', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({ itemId: item.id, change: -1, reason: 'use' }),
     })
     const data = await response.json()
@@ -258,7 +294,7 @@ export default function InventoryPage() {
     const isEditing = Boolean(categoryForm.id)
     const response = await fetch('/api/inventory/categories', {
       method: isEditing ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify(categoryForm),
     })
     const data = await response.json()
@@ -271,7 +307,7 @@ export default function InventoryPage() {
     if (!canManageInventory) return
     await fetch('/api/inventory/categories', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({ id }),
     })
     await loadCategories()
@@ -286,7 +322,7 @@ export default function InventoryPage() {
     const isEditing = Boolean(locationForm.id)
     const response = await fetch('/api/inventory/locations', {
       method: isEditing ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify(locationForm),
     })
     const data = await response.json()
@@ -299,7 +335,7 @@ export default function InventoryPage() {
     if (!canManageInventory) return
     await fetch('/api/inventory/locations', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       body: JSON.stringify({ id }),
     })
     await loadLocations()
@@ -404,6 +440,7 @@ export default function InventoryPage() {
                   onUpdateStock={canAdjustStock ? handleUpdateStock : undefined}
                   onPhysicalCount={canAdjustStock ? () => handlePhysicalCount(item) : undefined}
                   onUseOne={user?.role === 'colaborador' ? () => handleUseOne(item) : undefined}
+                  onDelete={canManageInventory ? handleDeleteItem : undefined}
                   role={user?.role as UserRole}
                 />
               ))}
@@ -442,6 +479,11 @@ export default function InventoryPage() {
                       {canManageInventory && (
                         <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
                           Editar
+                        </Button>
+                      )}
+                      {canManageInventory && (
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteItem(item)}>
+                          Eliminar
                         </Button>
                       )}
                       {user?.role === 'colaborador' && (
