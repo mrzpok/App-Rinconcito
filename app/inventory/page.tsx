@@ -146,6 +146,10 @@ export default function InventoryPage() {
       body: JSON.stringify({ ...updatedItem, id: selectedItem?.id }),
     })
     const data = await response.json()
+    if (!response.ok || data.error) {
+      alert(data.error || 'No se pudo guardar el artículo')
+      return
+    }
     const item = data.item as InventoryItem
 
     if (item) {

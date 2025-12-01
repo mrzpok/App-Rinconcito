@@ -48,22 +48,40 @@ export async function POST(request: Request) {
 
   const body = await request.json()
 
+  // Resolver nombres de categoría y ubicación si solo llega el ID
+  let categoryName = body.category
+  if (body.categoryId && !categoryName) {
+    const category = await queryOne<any>('SELECT * FROM inventory_categories WHERE id = ?', [body.categoryId])
+    categoryName = category?.name || categoryName
+  }
+
+  let locationName = body.location
+  if (body.locationId && !locationName) {
+    const location = await queryOne<any>('SELECT * FROM inventory_locations WHERE id = ?', [body.locationId])
+    locationName = location?.name || locationName
+  }
+
   const id = crypto.randomUUID()
   const createdAt = new Date().toISOString()
+
+  const name = (body.name || '').trim()
+  if (!name) {
+    return NextResponse.json({ error: 'Falta el nombre del artículo' }, { status: 400 })
+  }
 
   await query(
     'INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, brand, serialInternal, serial, categoryId, locationId, customAttributes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       id,
       body.hotelId || '1',
-      body.name,
-      body.category,
+      name,
+      categoryName || body.category || 'supplies',
       body.quantity || 0,
       body.minimumLevel || 0,
       body.unit || 'unidades',
       body.supplier || '',
       body.lastRestocked || createdAt,
-      body.location || 'Bodega',
+      locationName || body.location || 'Bodega',
       body.brand || '',
       body.serialInternal || '',
       body.serial || '',
@@ -86,7 +104,8 @@ export async function POST(request: Request) {
       quantity: body.quantity || 0,
       minimumLevel: body.minimumLevel || 0,
       unit: body.unit || 'unidades',
-      location: body.location || 'Bodega',
+      category: categoryName || body.category || 'supplies',
+      location: locationName || body.location || 'Bodega',
     })
 
   return NextResponse.json({ item: safeItem })
@@ -111,16 +130,28 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Sin permisos para editar inventario' }, { status: 403 })
   }
 
+  let categoryName = body.category
+  if (body.categoryId && !categoryName) {
+    const category = await queryOne<any>('SELECT * FROM inventory_categories WHERE id = ?', [body.categoryId])
+    categoryName = category?.name || categoryName
+  }
+
+  let locationName = body.location
+  if (body.locationId && !locationName) {
+    const location = await queryOne<any>('SELECT * FROM inventory_locations WHERE id = ?', [body.locationId])
+    locationName = location?.name || locationName
+  }
+
   await query(
     'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ?, brand = ?, serialInternal = ?, serial = ?, categoryId = ?, locationId = ?, customAttributes = ? WHERE id = ?',
     [
-      body.name || existing.name,
-      body.category || existing.category,
+      (body.name || existing.name || '').trim(),
+      categoryName || body.category || existing.category,
       body.quantity ?? existing.quantity,
       body.minimumLevel ?? existing.minimumLevel,
       body.unit || existing.unit,
       body.supplier ?? existing.supplier,
-      body.location || existing.location,
+      locationName || body.location || existing.location,
       body.lastRestocked || existing.lastRestocked || new Date().toISOString(),
       body.brand ?? existing.brand ?? '',
       body.serialInternal ?? existing.serialInternal ?? '',
