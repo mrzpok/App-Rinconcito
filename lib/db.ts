@@ -302,6 +302,54 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       .map((loc) => mapDate(loc)) as T[]
   }
 
+  if (sql.startsWith('INSERT INTO inventory_categories')) {
+    const [id, name, description, createdAt] = values
+    dbData.inventory_categories.push({ id, name, description, createdAt })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE inventory_categories SET')) {
+    const [name, description, id] = values
+    const idx = dbData.inventory_categories.findIndex((cat) => cat.id === id)
+    if (idx !== -1) {
+      dbData.inventory_categories[idx] = { ...dbData.inventory_categories[idx], name, description }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM inventory_categories')) {
+    const [id] = values
+    dbData.inventory_categories = dbData.inventory_categories.filter((cat) => cat.id !== id)
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO inventory_locations')) {
+    const [id, name, description, createdAt] = values
+    dbData.inventory_locations.push({ id, name, description, createdAt })
+    saveData(dbData)
+    return []
+  }
+
+  if (sql.startsWith('UPDATE inventory_locations SET')) {
+    const [name, description, id] = values
+    const idx = dbData.inventory_locations.findIndex((loc) => loc.id === id)
+    if (idx !== -1) {
+      dbData.inventory_locations[idx] = { ...dbData.inventory_locations[idx], name, description }
+      saveData(dbData)
+    }
+    return []
+  }
+
+  if (sql.startsWith('DELETE FROM inventory_locations')) {
+    const [id] = values
+    dbData.inventory_locations = dbData.inventory_locations.filter((loc) => loc.id !== id)
+    saveData(dbData)
+    return []
+  }
+
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_movements')) {
     return [...dbData.inventory_movements]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -396,22 +444,6 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
     return []
   }
 
-  if (sql.startsWith('INSERT INTO inventory_movements')) {
-    const [id, itemId, userId, change, reason, locationFrom, locationTo, createdAt] = values
-    dbData.inventory_movements.push({
-      id,
-      itemId,
-      userId,
-      change: Number(change),
-      reason,
-      locationFrom,
-      locationTo,
-      createdAt,
-    })
-    saveData(dbData)
-    return []
-  }
-
   if (sql.startsWith('UPDATE housekeeping_tasks SET')) {
     if (values.length === 10) {
       const [roomId, assignedTo, status, taskType, priority, notes, photoUrl, completedAt, completedBy, id] = values
@@ -440,6 +472,22 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       dbData.housekeeping_tasks[idx] = { ...dbData.housekeeping_tasks[idx], status, photoUrl, completedAt, completedBy }
       saveData(dbData)
     }
+    return []
+  }
+
+  if (sql.startsWith('INSERT INTO inventory_movements')) {
+    const [id, itemId, userId, change, reason, locationFrom, locationTo, createdAt] = values
+    dbData.inventory_movements.push({
+      id,
+      itemId,
+      userId,
+      change: Number(change),
+      reason,
+      locationFrom,
+      locationTo,
+      createdAt,
+    })
+    saveData(dbData)
     return []
   }
 
