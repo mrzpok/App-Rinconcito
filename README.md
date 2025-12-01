@@ -1,26 +1,6 @@
 # Internal PMS app
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/mr-zpok-7476s-projects/v0-internal-pms-app)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/hIPcvJSDMkw)
-
-## Overview
-
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/mr-zpok-7476s-projects/v0-internal-pms-app](https://vercel.com/mr-zpok-7476s-projects/v0-internal-pms-app)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/hIPcvJSDMkw](https://v0.app/chat/hIPcvJSDMkw)**
+Aplicación de gestión para El Rinconcito, lista para ejecutarse en tu propio servidor sin dependencias de Vercel ni v0.app.
 
 ## How It Works
 
