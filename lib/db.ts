@@ -109,6 +109,7 @@ function saveData(data: DbData) {
 }
 
 let dbData = loadData()
+dbData.inventory = dbData.inventory.map((item) => ({ ...item, customAttributes: item.customAttributes || {} }))
 
 function seedIfNeeded() {
   let updated = false
@@ -261,7 +262,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory')) {
     return [...dbData.inventory]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((item) => mapDate(item)) as T[]
+      .map((item) => mapDate({ ...item, customAttributes: item.customAttributes || {} })) as T[]
   }
 
   if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_categories')) {
@@ -335,6 +336,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       serial,
       categoryId,
       locationId,
+      customAttributes,
       id,
     ] = values
     const idx = dbData.inventory.findIndex((item) => item.id === id)
@@ -354,6 +356,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
         serial,
         categoryId,
         locationId,
+        customAttributes: customAttributes || {},
       }
       saveData(dbData)
     }
@@ -451,6 +454,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       serial,
       categoryId,
       locationId,
+      customAttributes,
       createdAt,
     ] = values
     dbData.inventory.push({
@@ -469,6 +473,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
       serial,
       categoryId,
       locationId,
+      customAttributes: customAttributes || {},
       createdAt,
     })
     saveData(dbData)
@@ -760,12 +765,6 @@ export async function queryOne<T = any>(sql: string, values: any[] = []): Promis
     return (user ? mapDate(user) : null) as T | null
   }
 
-  if (sql.startsWith('SELECT * FROM inventory WHERE id = ?')) {
-    const id = values[0]
-    const item = dbData.inventory.find((entry) => entry.id === id)
-    return (item ? mapDate(item) : null) as T | null
-  }
-
   if (sql.startsWith('SELECT id, hotelId, roomNumber')) {
     // Room lookup by ID
     const id = values[0]
@@ -776,6 +775,24 @@ export async function queryOne<T = any>(sql: string, values: any[] = []): Promis
   if (sql.startsWith('SELECT id, name, address')) {
     const hotel = dbData.hotels[0]
     return (hotel ? mapDate(hotel) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT * FROM inventory_categories WHERE id = ?')) {
+    const id = values[0]
+    const category = dbData.inventory_categories.find((cat) => cat.id === id)
+    return (category ? mapDate(category) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT * FROM inventory_locations WHERE id = ?')) {
+    const id = values[0]
+    const location = dbData.inventory_locations.find((loc) => loc.id === id)
+    return (location ? mapDate(location) : null) as T | null
+  }
+
+  if (sql.startsWith('SELECT * FROM inventory WHERE id = ?')) {
+    const id = values[0]
+    const item = dbData.inventory.find((entry) => entry.id === id)
+    return (item ? mapDate({ ...item, customAttributes: item.customAttributes || {} }) : null) as T | null
   }
 
   if (sql.startsWith('SELECT * FROM roles WHERE id = ?')) {

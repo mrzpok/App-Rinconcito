@@ -7,6 +7,7 @@ import crypto from 'node:crypto'
 function mapItem(row: any): InventoryItem {
   return {
     ...row,
+    customAttributes: row.customAttributes || {},
     createdAt: new Date(row.createdAt),
     lastRestocked: row.lastRestocked ? new Date(row.lastRestocked) : undefined,
   }
@@ -14,7 +15,7 @@ function mapItem(row: any): InventoryItem {
 
 export async function GET() {
   const items = await query<InventoryItem>(
-    'SELECT id, hotelId, name, category, categoryId, quantity, minimumLevel, unit, supplier, brand, serialInternal, serial, lastRestocked, location, locationId, createdAt FROM inventory ORDER BY name ASC',
+    'SELECT id, hotelId, name, category, categoryId, quantity, minimumLevel, unit, supplier, brand, serialInternal, serial, customAttributes, lastRestocked, location, locationId, createdAt FROM inventory ORDER BY name ASC',
   )
   return NextResponse.json({ items: items.map(mapItem) })
 }
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
   const createdAt = new Date().toISOString()
 
   await query(
-    'INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, brand, serialInternal, serial, categoryId, locationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO inventory (id, hotelId, name, category, quantity, minimumLevel, unit, supplier, lastRestocked, location, brand, serialInternal, serial, categoryId, locationId, customAttributes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       id,
       body.hotelId || '1',
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
       body.serial || '',
       body.categoryId || '',
       body.locationId || '',
+      body.customAttributes || {},
       createdAt,
     ],
   )
@@ -76,7 +78,7 @@ export async function PUT(request: Request) {
   }
 
   await query(
-    'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ?, brand = ?, serialInternal = ?, serial = ?, categoryId = ?, locationId = ? WHERE id = ?',
+    'UPDATE inventory SET name = ?, category = ?, quantity = ?, minimumLevel = ?, unit = ?, supplier = ?, location = ?, lastRestocked = ?, brand = ?, serialInternal = ?, serial = ?, categoryId = ?, locationId = ?, customAttributes = ? WHERE id = ?',
     [
       body.name || existing.name,
       body.category || existing.category,
@@ -91,6 +93,7 @@ export async function PUT(request: Request) {
       body.serial ?? existing.serial ?? '',
       body.categoryId ?? existing.categoryId ?? '',
       body.locationId ?? existing.locationId ?? '',
+      body.customAttributes || existing.customAttributes || {},
       body.id,
     ],
   )

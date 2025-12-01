@@ -110,6 +110,7 @@ export interface InventoryItem {
   brand?: string;
   serialInternal?: string;
   serial?: string;
+  customAttributes?: Record<string, string>;
   lastRestocked?: Date;
   createdAt: Date;
   location: string;

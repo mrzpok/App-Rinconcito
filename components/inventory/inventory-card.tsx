@@ -105,6 +105,19 @@ export function InventoryCard({ item, onEdit, onUpdateStock, onPhysicalCount, on
           </div>
         )}
 
+        {item.customAttributes && Object.keys(item.customAttributes).length > 0 && (
+          <div className="space-y-1">
+            <span className="text-sm text-muted-foreground">Atributos personalizados:</span>
+            <ul className="text-sm text-foreground list-disc list-inside space-y-1">
+              {Object.entries(item.customAttributes).map(([key, value]) => (
+                <li key={key}>
+                  <span className="font-semibold capitalize">{key}:</span> {value}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {item.lastRestocked && (
           <p className="text-xs text-muted-foreground">
             Último abastecimiento: {new Date(item.lastRestocked).toLocaleDateString()}

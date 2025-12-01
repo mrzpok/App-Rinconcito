@@ -35,6 +35,7 @@ export default function InventoryPage() {
     const data = await response.json()
     const parsed = (data.items || []).map((item: any) => ({
       ...item,
+      customAttributes: item.customAttributes || {},
       createdAt: new Date(item.createdAt),
       lastRestocked: item.lastRestocked ? new Date(item.lastRestocked) : undefined,
     }))

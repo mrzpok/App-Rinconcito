@@ -172,6 +172,7 @@ export const seedInventory: InventoryItem[] = [
     brand: 'Algodón Caribe',
     serialInternal: 'LIN-001',
     serial: 'SAB-1001',
+    customAttributes: { color: 'Blanco', material: 'Algodón 300 hilos' },
     createdAt: new Date(),
   },
   {
@@ -188,6 +189,7 @@ export const seedInventory: InventoryItem[] = [
     brand: 'Mar Caribe',
     serialInternal: 'LIN-002',
     serial: 'TOW-2201',
+    customAttributes: { color: 'Blanco', tipo: 'Baño' },
     createdAt: new Date(),
   },
   {
@@ -204,6 +206,7 @@ export const seedInventory: InventoryItem[] = [
     brand: 'Isla Limpia',
     serialInternal: 'AME-001',
     serial: 'KIT-3300',
+    customAttributes: { presentacion: 'Kit cortesía', fragancia: 'Coco' },
     createdAt: new Date(),
   },
 ]
