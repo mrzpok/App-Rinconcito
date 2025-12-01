@@ -275,6 +275,7 @@ function mapDate<
 
 export async function query<T = any>(sql: string, values: any[] = []): Promise<T[]> {
   // Reads use in-memory data; updates persist to disk
+  ensureCollections()
   const normalized = sql.trim().toUpperCase()
 
   if (normalized.startsWith('SELECT') && sql.includes('FROM rooms')) {
@@ -807,6 +808,7 @@ export async function query<T = any>(sql: string, values: any[] = []): Promise<T
 }
 
 export async function queryOne<T = any>(sql: string, values: any[] = []): Promise<T | null> {
+  ensureCollections()
   if (sql.startsWith('SELECT id, email, name, password')) {
     const email = values[0]
     const user = dbData.users.find((u) => u.email === email && u.active)

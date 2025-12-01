@@ -39,7 +39,7 @@ export default function InventoryPage() {
   }, [])
 
   const loadInventory = useCallback(async () => {
-    const response = await fetch('/api/inventory')
+    const response = await fetch('/api/inventory', { credentials: 'include' })
     const data = await response.json()
     const parsed = (data.items || []).map((item: any) => ({
       ...item,
@@ -51,14 +51,14 @@ export default function InventoryPage() {
   }, [])
 
   const loadCategories = useCallback(async () => {
-    const response = await fetch('/api/inventory/categories')
+    const response = await fetch('/api/inventory/categories', { credentials: 'include' })
     const data = await response.json()
     const parsed = (data.categories || []).map((cat: any) => ({ ...cat, createdAt: new Date(cat.createdAt) }))
     setCategories(parsed)
   }, [])
 
   const loadLocations = useCallback(async () => {
-    const response = await fetch('/api/inventory/locations')
+    const response = await fetch('/api/inventory/locations', { credentials: 'include' })
     const data = await response.json()
     const parsed = (data.locations || []).map((loc: any) => ({ ...loc, createdAt: new Date(loc.createdAt) }))
     setLocations(parsed)
@@ -72,7 +72,7 @@ export default function InventoryPage() {
   }, [loadInventory, loadCategories, loadLocations])
 
   async function loadMovements() {
-    const response = await fetch('/api/inventory/movements')
+    const response = await fetch('/api/inventory/movements', { credentials: 'include' })
     const data = await response.json()
     const parsed = (data.movements || []).map((move: any) => ({
       ...move,
@@ -119,6 +119,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ id: item.id }),
     })
     const data = await response.json()
@@ -141,6 +142,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ ...updatedItem, id: selectedItem?.id }),
     })
     const data = await response.json()
@@ -175,6 +177,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({
         itemId,
         change,
@@ -218,6 +221,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory/physical', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ itemId: item.id, countedQuantity, location: item.location, userId: user?.id }),
     })
     const data = await response.json()
@@ -241,6 +245,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ itemId: item.id, change: -1, reason: 'use' }),
     })
     const data = await response.json()
@@ -295,6 +300,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory/categories', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify(categoryForm),
     })
     const data = await response.json()
@@ -308,6 +314,7 @@ export default function InventoryPage() {
     await fetch('/api/inventory/categories', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ id }),
     })
     await loadCategories()
@@ -323,6 +330,7 @@ export default function InventoryPage() {
     const response = await fetch('/api/inventory/locations', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify(locationForm),
     })
     const data = await response.json()
@@ -336,6 +344,7 @@ export default function InventoryPage() {
     await fetch('/api/inventory/locations', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
+      credentials: 'include',
       body: JSON.stringify({ id }),
     })
     await loadLocations()
