@@ -109,6 +109,34 @@ function saveData(data: DbData) {
 }
 
 let dbData = loadData()
+
+function ensureCollections() {
+  let changed = false
+
+  if (!Array.isArray(dbData.inventory_categories)) {
+    dbData.inventory_categories = []
+    changed = true
+  }
+
+  if (!Array.isArray(dbData.inventory_locations)) {
+    dbData.inventory_locations = []
+    changed = true
+  }
+
+  if (!Array.isArray(dbData.inventory_movements)) {
+    dbData.inventory_movements = []
+    changed = true
+  }
+
+  if (!Array.isArray(dbData.inventory)) {
+    dbData.inventory = []
+    changed = true
+  }
+
+  if (changed) saveData(dbData)
+}
+
+ensureCollections()
 dbData.inventory = dbData.inventory.map((item) => ({ ...item, customAttributes: item.customAttributes || {} }))
 
 function seedIfNeeded() {
