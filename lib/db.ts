@@ -198,55 +198,57 @@ function mapDate<
 
 export async function query<T = any>(sql: string, values: any[] = []): Promise<T[]> {
   // Reads use in-memory data; updates persist to disk
-  if (sql.includes('FROM rooms')) {
+  const normalized = sql.trim().toUpperCase()
+
+  if (normalized.startsWith('SELECT') && sql.includes('FROM rooms')) {
     return [...dbData.rooms]
       .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber))
       .map((room) => mapDate(room)) as T[]
   }
 
-  if (sql.includes('FROM reservations')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM reservations')) {
     return [...dbData.reservations]
       .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
       .map((reservation) => mapDate(reservation)) as T[]
   }
 
-  if (sql.includes('FROM inventory')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory')) {
     return [...dbData.inventory]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((item) => mapDate(item)) as T[]
   }
 
-  if (sql.includes('FROM inventory_movements')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM inventory_movements')) {
     return [...dbData.inventory_movements]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((movement) => mapDate(movement)) as T[]
   }
 
-  if (sql.includes('FROM housekeeping_tasks')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM housekeeping_tasks')) {
     return [...dbData.housekeeping_tasks]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((task) => mapDate(task)) as T[]
   }
 
-  if (sql.includes('FROM housekeeping_history')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM housekeeping_history')) {
     return [...dbData.housekeeping_history]
       .sort((a, b) => new Date(b.completedAt || b.createdAt || '').getTime() - new Date(a.completedAt || a.createdAt || '').getTime())
       .map((entry) => mapDate(entry as any)) as T[]
   }
 
-  if (sql.includes('FROM users')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM users')) {
     return [...dbData.users]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((user) => ({ ...mapDate(user), active: Boolean(user.active) })) as T[]
   }
 
-  if (sql.includes('FROM roles')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM roles')) {
     return [...dbData.roles]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((role) => mapDate(role)) as T[]
   }
 
-  if (sql.includes('FROM hotels')) {
+  if (normalized.startsWith('SELECT') && sql.includes('FROM hotels')) {
     return dbData.hotels.map((hotel) => mapDate(hotel)) as T[]
   }
 
