@@ -133,17 +133,26 @@ export default function InventoryPage() {
   }
 
   const handleSaveItem = async (updatedItem: InventoryItem) => {
-    const isEditing = Boolean(selectedItem)
+    const isEditing = Boolean(selectedItem?.id)
     if (user?.role !== 'super-admin') {
       alert('Solo el super administrador puede crear o editar artículos')
       return
+    }
+
+    const payload = {
+      ...updatedItem,
+      id: updatedItem.id || selectedItem?.id,
+    }
+
+    if (!isEditing) {
+      delete (payload as any).id
     }
 
     const response = await fetch('/api/inventory', {
       method: isEditing ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', ...sessionHeaders() },
       credentials: 'include',
-      body: JSON.stringify({ ...updatedItem, id: selectedItem?.id }),
+      body: JSON.stringify(payload),
     })
     const data = await response.json()
     if (!response.ok || data.error) {
@@ -266,23 +275,7 @@ export default function InventoryPage() {
       alert('Solo el super administrador puede crear artículos')
       return
     }
-    setSelectedItem({
-      id: '',
-      hotelId: '1',
-      name: '',
-      category: categories[0]?.name || 'supplies',
-      categoryId: categories[0]?.id || '',
-      quantity: 0,
-      minimumLevel: 10,
-      unit: 'units',
-      supplier: '',
-      brand: '',
-      serialInternal: '',
-      serial: '',
-      location: locations[0]?.name || 'Bodega',
-      locationId: locations[0]?.id || '',
-      createdAt: new Date(),
-    })
+    setSelectedItem(undefined)
     setIsModalOpen(true)
   }
 
