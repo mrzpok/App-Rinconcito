@@ -116,9 +116,10 @@ export async function PUT(request: Request) {
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const body = await request.json()
-  if (!body.id) return NextResponse.json({ error: 'Falta el ID del artículo' }, { status: 400 })
+  const itemId = body.id || body.itemId || body.item?.id
+  if (!itemId) return NextResponse.json({ error: 'Falta el ID del artículo' }, { status: 400 })
 
-  const existing = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [body.id])
+  const existing = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [itemId])
   if (!existing) return NextResponse.json({ error: 'Artículo no encontrado' }, { status: 404 })
 
   const changingQuantity = body.quantity !== undefined && body.quantity !== existing.quantity
@@ -159,10 +160,10 @@ export async function PUT(request: Request) {
       body.categoryId ?? existing.categoryId ?? '',
       body.locationId ?? existing.locationId ?? '',
       body.customAttributes || existing.customAttributes || {},
-      body.id,
+      itemId,
     ],
   )
 
-  const updated = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [body.id])
+  const updated = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [itemId])
   return NextResponse.json({ item: updated ? mapItem(updated) : null })
 }
