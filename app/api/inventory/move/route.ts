@@ -31,6 +31,14 @@ export async function POST(request: Request) {
 
     const item = await queryOne<InventoryItem>('SELECT * FROM inventory WHERE id = ?', [itemId])
     if (!item) return NextResponse.json({ error: 'Item no encontrado' }, { status: 404 })
+
+    const nonConsumableCategories = ['equipment', 'equipos', 'mobiliario', 'furniture']
+    if (nonConsumableCategories.includes((item.category || '').toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Solo puedes descontar consumibles. Las herramientas y mobiliario requieren aprobación.' },
+        { status: 403 },
+      )
+    }
     if ((item.quantity || 0) + negative < 0) {
       return NextResponse.json({ error: 'No hay stock suficiente' }, { status: 400 })
     }
