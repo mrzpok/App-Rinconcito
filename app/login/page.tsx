@@ -10,8 +10,8 @@ import { Waves } from 'lucide-react'
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [email, setEmail] = useState('admin@rinconcito.co')
-  const [password, setPassword] = useState('PAssword2@!!7')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const redirect = searchParams.get('redirect') || '/dashboard'
 
@@ -57,12 +57,6 @@ function LoginForm() {
           <Button type="submit" className="w-full bg-sky-600 hover:bg-sky-700">Entrar</Button>
         </form>
 
-        <div className="text-xs text-slate-500 space-y-1">
-          <p>Perfiles disponibles:</p>
-          <p><strong>Super admin:</strong> admin@rinconcito.co / PAssword2@!!7</p>
-          <p><strong>Colaborador:</strong> colaborador@rinconcito.co / colaborador</p>
-          <p><strong>Housekeeper:</strong> housekeeper@rinconcito.co / housekeeper</p>
-        </div>
       </Card>
     </div>
   )

@@ -58,7 +58,7 @@ export function MainNav() {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 space-y-2 px-3 overflow-y-auto">
+        <nav className="flex-1 space-y-2 px-3 overflow-y-auto pb-16">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + '/')
             return (

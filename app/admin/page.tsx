@@ -150,105 +150,136 @@ export default function AdminPage() {
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 border border-border rounded-lg overflow-hidden bg-white">
+            <div className="lg:col-span-2 border border-border rounded-lg bg-white">
               <div className="p-3 border-b bg-slate-50 flex items-center justify-between">
                 <span className="font-semibold">Equipo</span>
                 <span className="text-xs text-muted-foreground">Crear, editar o desactivar accesos</span>
               </div>
-              <table className="min-w-full text-sm">
-                <thead className="bg-slate-50 text-left">
-                  <tr>
-                    <th className="p-3">Nombre</th>
-                    <th className="p-3">Correo</th>
-                    <th className="p-3">Rol</th>
-                    <th className="p-3">Estado</th>
-                    <th className="p-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadError && !loadingUsers && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-left">
                     <tr>
-                      <td className="p-3 text-red-600" colSpan={5}>
-                        {loadError}
-                      </td>
+                      <th className="p-3">Nombre</th>
+                      <th className="p-3">Correo</th>
+                      <th className="p-3">Rol</th>
+                      <th className="p-3">Estado</th>
+                      <th className="p-3">Acciones</th>
                     </tr>
-                  )}
-                  {loadingUsers && (
-                    <tr>
-                      <td className="p-3" colSpan={5}>
-                        Cargando usuarios...
-                      </td>
-                    </tr>
-                  )}
-                  {users.map((u) => (
-                    <tr
-                      key={u.id}
-                      className={`border-t cursor-pointer ${selectedUserId === u.id ? 'bg-sky-50' : ''}`}
-                      onClick={() => {
-                        setSelectedUserId(u.id)
-                        setEditUser({
-                          id: u.id,
-                          name: u.name,
-                          email: u.email,
-                          role: u.role,
-                          active: u.active,
-                          password: '',
-                        })
-                      }}
-                    >
-                      <td className="p-3 font-semibold">{u.name}</td>
-                      <td className="p-3 text-muted-foreground">{u.email}</td>
-                      <td className="p-3">
-                        <select
-                          value={u.role}
-                          onChange={(e) => updateUser(u.id, { role: e.target.value as UserRole })}
-                          className="border rounded-md px-2 py-1"
-                        >
-                          {roleOptions.map((role) => (
-                            <option key={role.id} value={role.name || role.id}>
-                              {role.name || role.id}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="p-3">
-                        <label className="inline-flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={u.active}
-                            onChange={(e) => updateUser(u.id, { active: e.target.checked })}
-                          />
-                          Activo
-                        </label>
-                      </td>
-                      <td className="p-3">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={async () => {
-                            await fetch('/api/users', {
-                              method: 'DELETE',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
-                              },
-                              credentials: 'include',
-                              body: JSON.stringify({ id: u.id }),
-                            })
-                            setUsers((prev) => prev.filter((userRow) => userRow.id !== u.id))
-                            if (selectedUserId === u.id) {
-                              setSelectedUserId(null)
-                              setEditUser({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
-                            }
-                          }}
-                        >
-                          Borrar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {loadError && !loadingUsers && (
+                      <tr>
+                        <td className="p-3 text-red-600" colSpan={5}>
+                          {loadError}
+                        </td>
+                      </tr>
+                    )}
+                    {loadingUsers && (
+                      <tr>
+                        <td className="p-3" colSpan={5}>
+                          Cargando usuarios...
+                        </td>
+                      </tr>
+                    )}
+                    {users.map((u) => (
+                      <tr
+                        key={u.id}
+                        className={`border-t cursor-pointer ${selectedUserId === u.id ? 'bg-sky-50' : ''}`}
+                        onClick={() => {
+                          setSelectedUserId(u.id)
+                          setEditUser({
+                            id: u.id,
+                            name: u.name,
+                            email: u.email,
+                            role: u.role,
+                            active: u.active,
+                            password: '',
+                          })
+                        }}
+                      >
+                        <td className="p-3 font-semibold whitespace-nowrap">{u.name}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{u.email}</td>
+                        <td className="p-3 whitespace-nowrap">
+                          <select
+                            value={u.role}
+                            onChange={(e) => updateUser(u.id, { role: e.target.value as UserRole })}
+                            className="border rounded-md px-2 py-1"
+                          >
+                            {roleOptions.map((role) => (
+                              <option key={role.id} value={role.name || role.id}>
+                                {role.name || role.id}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          <label className="inline-flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={u.active}
+                              onChange={(e) => updateUser(u.id, { active: e.target.checked })}
+                            />
+                            Activo
+                          </label>
+                        </td>
+                        <td className="p-3 space-x-2 whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedUserId(u.id)
+                              setEditUser({
+                                id: u.id,
+                                name: u.name,
+                                email: u.email,
+                                role: u.role,
+                                active: u.active,
+                                password: '',
+                              })
+                            }}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={u.active ? 'outline' : 'secondary'}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              updateUser(u.id, { active: !u.active })
+                            }}
+                          >
+                            {u.active ? 'Desactivar' : 'Activar'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await fetch('/api/users', {
+                                method: 'DELETE',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(user ? { 'x-rinconcito-session': JSON.stringify(user) } : {}),
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({ id: u.id }),
+                              })
+                              setUsers((prev) => prev.filter((userRow) => userRow.id !== u.id))
+                              if (selectedUserId === u.id) {
+                                setSelectedUserId(null)
+                                setEditUser({ id: '', name: '', email: '', password: '', role: 'colaborador', active: true })
+                              }
+                            }}
+                          >
+                            Borrar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="border border-border rounded-lg p-4 bg-white space-y-3">
