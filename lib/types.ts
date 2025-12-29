@@ -1,15 +1,27 @@
 // PMS Core Types
-export type UserRole = 'admin' | 'manager' | 'staff' | 'housekeeping' | 'front_desk';
+export type UserRole = string;
 
 export interface User {
   id: string;
   email: string;
   name: string;
+  password?: string;
   role: UserRole;
   hotelId: string;
   active: boolean;
   createdAt: Date;
 }
+
+export type RolePermission = {
+  id: string;
+  name: string;
+  canManageRooms: boolean;
+  canManageInventory: boolean;
+  canManageHousekeeping: boolean;
+  canManageUsers: boolean;
+  canViewDashboard: boolean;
+  createdAt: Date;
+};
 
 export interface Hotel {
   id: string;
@@ -73,18 +85,62 @@ export interface HousekeepingTask {
   notes?: string;
   createdAt: Date;
   completedAt?: Date;
+  completedBy?: string;
+  photoUrl?: string;
+}
+
+export interface HousekeepingCompletion {
+  id: string;
+  taskId: string;
+  roomId: string;
+  completedBy: string;
+  completedAt: Date;
 }
 
 export interface InventoryItem {
   id: string;
   hotelId: string;
   name: string;
-  category: 'supplies' | 'amenities' | 'equipment' | 'linens';
+  category: 'supplies' | 'amenities' | 'equipment' | 'linens' | string;
+  categoryId?: string;
   quantity: number;
   minimumLevel: number;
   unit: string;
   supplier?: string;
+  brand?: string;
+  serialInternal?: string;
+  serial?: string;
+  customAttributes?: Record<string, string>;
   lastRestocked?: Date;
+  createdAt: Date;
+  location: string;
+  locationId?: string;
+  deleted?: boolean;
+  deletedAt?: Date;
+}
+
+export interface InventoryCategory {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+}
+
+export interface InventoryLocation {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+}
+
+export interface InventoryMovement {
+  id: string;
+  itemId: string;
+  userId: string;
+  change: number;
+  reason: 'use' | 'add' | 'move' | 'physical-count';
+  locationFrom?: string;
+  locationTo?: string;
   createdAt: Date;
 }
 

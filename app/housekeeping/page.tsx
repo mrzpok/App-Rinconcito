@@ -6,9 +6,9 @@ import { TaskFilter, TaskFilters } from '@/components/housekeeping/task-filter'
 import { TaskModal } from '@/components/housekeeping/task-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, ClipboardList } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { mockHousekeepingTasks } from '@/lib/mock-data'
+import { useEffect, useMemo, useState } from 'react'
 import { HousekeepingTask } from '@/lib/types'
+import { useSessionUser } from '@/lib/use-session'
 
 // Mock staff members
 const staffMembers = [
@@ -24,7 +24,10 @@ const assigneeNames = staffMembers.reduce((acc, member) => {
 }, {} as Record<string, string>)
 
 export default function HousekeepingPage() {
-  const [tasks, setTasks] = useState<HousekeepingTask[]>(mockHousekeepingTasks)
+  const [tasks, setTasks] = useState<HousekeepingTask[]>([])
+  const [completed, setCompleted] = useState<
+    Array<{ id: string; taskId: string; roomId: string; roomNumber?: string; userName?: string; completedAt?: Date }>
+  >([])
   const [filters, setFilters] = useState<TaskFilters>({
     search: '',
     status: 'all',
@@ -33,6 +36,29 @@ export default function HousekeepingPage() {
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<HousekeepingTask | undefined>()
+  const { user } = useSessionUser()
+
+  useEffect(() => {
+    async function loadTasks() {
+      const response = await fetch('/api/housekeeping')
+      const data = await response.json()
+      setTasks(
+        (data.tasks || []).map((task: any) => ({
+          ...task,
+          createdAt: new Date(task.createdAt),
+          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+        })),
+      )
+      setCompleted(
+        (data.completed || []).map((item: any) => ({
+          ...item,
+          completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
+        })),
+      )
+    }
+
+    loadTasks()
+  }, [])
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -56,24 +82,69 @@ export default function HousekeepingPage() {
     setIsModalOpen(true)
   }
 
-  const handleSaveTask = (updatedTask: HousekeepingTask) => {
+  const handleSaveTask = async (updatedTask: HousekeepingTask) => {
     if (selectedTask) {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-      )
+      setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)))
+      await fetch('/api/housekeeping', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      })
     } else {
-      setTasks((prev) => [...prev, { ...updatedTask, id: Date.now().toString(), createdAt: new Date() }])
+      const response = await fetch('/api/housekeeping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      })
+      const data = await response.json()
+      const saved = data.task
+      setTasks((prev) => [
+        ...prev,
+        {
+          ...saved,
+          createdAt: new Date(saved.createdAt),
+          completedAt: saved.completedAt ? new Date(saved.completedAt) : undefined,
+        },
+      ])
     }
     setSelectedTask(undefined)
   }
 
-  const handleStatusChange = (taskId: string, newStatus: HousekeepingTask['status']) => {
+  const handleStatusChange = async (taskId: string, newStatus: HousekeepingTask['status']) => {
+    if (!user) {
+      alert('Debes iniciar sesión')
+      return
+    }
+
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId 
-          ? { ...t, status: newStatus, completedAt: newStatus === 'completed' ? new Date() : undefined } 
-          : t
-      )
+        t.id === taskId
+          ? { ...t, status: newStatus, completedAt: newStatus === 'completed' ? new Date() : undefined }
+          : t,
+      ),
+    )
+
+    const currentTask = tasks.find((t) => t.id === taskId)
+    await fetch('/api/housekeeping', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...currentTask, status: newStatus }),
+    })
+
+    const refresh = await fetch('/api/housekeeping')
+    const data = await refresh.json()
+    setTasks(
+      (data.tasks || []).map((task: any) => ({
+        ...task,
+        createdAt: new Date(task.createdAt),
+        completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+      })),
+    )
+    setCompleted(
+      (data.completed || []).map((item: any) => ({
+        ...item,
+        completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
+      })),
     )
   }
 
@@ -101,12 +172,12 @@ export default function HousekeepingPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Housekeeping Tasks</h1>
-              <p className="text-muted-foreground">Manage cleaning and maintenance assignments</p>
+              <h1 className="text-3xl font-bold text-foreground">Tareas de limpieza</h1>
+              <p className="text-muted-foreground">Asigna, registra y cierra las tareas de housekeeping</p>
             </div>
             <Button className="gap-2 w-full sm:w-auto" onClick={handleAddTask}>
               <Plus size={18} />
-              New Task
+              Nueva tarea
             </Button>
           </div>
 
@@ -118,23 +189,23 @@ export default function HousekeepingPage() {
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-muted-foreground">{stats.pending}</p>
-              <p className="text-xs text-muted-foreground mt-1">Pending</p>
+              <p className="text-xs text-muted-foreground mt-1">Pendientes</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
-              <p className="text-xs text-muted-foreground mt-1">In Progress</p>
+              <p className="text-xs text-muted-foreground mt-1">En progreso</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-accent">{stats.completed}</p>
-              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+              <p className="text-xs text-muted-foreground mt-1">Completadas</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{stats.blocked}</p>
-              <p className="text-xs text-muted-foreground mt-1">Blocked</p>
+              <p className="text-xs text-muted-foreground mt-1">Bloqueadas</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{stats.highPriority}</p>
-              <p className="text-xs text-muted-foreground mt-1">High Priority</p>
+              <p className="text-xs text-muted-foreground mt-1">Prioridad alta</p>
             </div>
           </div>
 
@@ -147,7 +218,7 @@ export default function HousekeepingPage() {
           {filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardList size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-              <p className="text-muted-foreground">No tasks found matching your filters</p>
+              <p className="text-muted-foreground">No hay tareas que coincidan con los filtros</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -162,6 +233,29 @@ export default function HousekeepingPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-10 bg-card border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3">Tareas completadas</h3>
+            {completed.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aún no hay tareas cerradas.</p>
+            ) : (
+              <div className="divide-y">
+                {completed.map((entry) => (
+                  <div key={entry.id} className="py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-semibold">{entry.roomNumber ? `Habitación ${entry.roomNumber}` : entry.roomId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Cerrada por {entry.userName || 'Usuario'}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.completedAt ? new Date(entry.completedAt).toLocaleString() : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

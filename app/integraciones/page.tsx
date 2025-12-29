@@ -32,11 +32,11 @@ export default function IntegrationsPage() {
     {
       platform: 'airbnb',
       name: 'Airbnb (iCal)',
-      status: 'disconnected' as const,
-      lastSync: null,
-      propertyId: '',
-      connected: false,
-      iCalUrl: '', // Agregar URL iCal
+      status: 'connected' as const,
+      lastSync: new Date(),
+      propertyId: 'Rinconcito Airbnb',
+      connected: true,
+      iCalUrl: 'https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d',
     },
   ])
 
@@ -215,6 +215,13 @@ export default function IntegrationsPage() {
                 <p>4. Copia el enlace iCal (debe terminar en .ics)</p>
                 <p>5. Pega el enlace en la configuración</p>
                 <p>6. El sistema sincronizará automáticamente cada 5 minutos</p>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">🗓️ Airbnb iCal listo</p>
+                <p>Usa este enlace para sincronizar automáticamente con Airbnb:</p>
+                <code className="block bg-white px-2 py-1 rounded break-all">
+                  https://www.airbnb.com.co/calendar/ical/1321265162932062075.ics?s=ea89b1b0558c5422a74dcf7bf3a20a7d
+                </code>
               </div>
             </div>
           </Card>

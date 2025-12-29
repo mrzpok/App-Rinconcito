@@ -1,10 +1,16 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { mockRooms } from '@/lib/mock-data'
 import Link from 'next/link'
 import { Users, Wind, Tv as TV, Wifi } from 'lucide-react'
+import { query } from '@/lib/db'
+import { Room } from '@/lib/types'
 
-export default function HabitacionesPage() {
+export default async function HabitacionesPage() {
+  const rooms = (await query<Room>('SELECT * FROM rooms ORDER BY roomNumber ASC')).map((room) => ({
+    ...room,
+    lastCleaned: room.lastCleaned ? new Date(room.lastCleaned) : undefined,
+    createdAt: new Date(room.createdAt),
+  }))
   const roomTypeTranslations: Record<string, string> = {
     single: 'Habitación Individual',
     double: 'Habitación Doble',
@@ -30,7 +36,7 @@ export default function HabitacionesPage() {
 
         {/* Room Types */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mockRooms.map((room) => (
+          {rooms.map((room) => (
             <Card key={room.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105">
               {/* Image Placeholder */}
               <div className="bg-gradient-to-br from-secondary via-secondary/80 to-accent h-48 flex items-end justify-start p-4">

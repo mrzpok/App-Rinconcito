@@ -1,5 +1,5 @@
 import { startAirbnbSyncSchedule, stopAirbnbSyncSchedule } from '@/lib/cron-sync'
-import { airbnbSyncState } from '@/lib/mock-data'
+import { airbnbSyncState, persistAirbnbState } from '@/lib/airbnb-state'
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +16,7 @@ export async function POST(request: Request) {
       airbnbSyncState.isConfigured = true
       airbnbSyncState.iCalUrl = iCalUrl
       startAirbnbSyncSchedule(iCalUrl)
+      persistAirbnbState()
       
       return Response.json({
         success: true,
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
       airbnbSyncState.isConfigured = false
       airbnbSyncState.iCalUrl = ''
       stopAirbnbSyncSchedule()
+      persistAirbnbState()
       
       return Response.json({
         success: true,

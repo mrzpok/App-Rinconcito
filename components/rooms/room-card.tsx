@@ -10,6 +10,10 @@ interface RoomCardProps {
   room: Room
   onEdit?: (room: Room) => void
   onStatusChange?: (roomId: string, newStatus: Room['status']) => void
+  onDelete?: (roomId: string) => void
+  canEdit?: boolean
+  canDelete?: boolean
+  canChangeStatus?: boolean
 }
 
 const roomStatusColors = {
@@ -20,7 +24,7 @@ const roomStatusColors = {
   blocked: { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-muted/30' },
 }
 
-export function RoomCard({ room, onEdit, onStatusChange }: RoomCardProps) {
+export function RoomCard({ room, onEdit, onStatusChange, onDelete, canEdit, canDelete, canChangeStatus }: RoomCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const statusConfig = roomStatusColors[room.status]
 
@@ -28,29 +32,37 @@ export function RoomCard({ room, onEdit, onStatusChange }: RoomCardProps) {
     <Card className={`p-6 hover:shadow-lg transition-all border-2 ${statusConfig.border}`}>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-2xl font-bold text-primary">Room {room.roomNumber}</h3>
-          <p className="text-sm text-muted-foreground">Floor {room.floor}</p>
+          <h3 className="text-2xl font-bold text-primary">Habitación {room.roomNumber}</h3>
+          <p className="text-sm text-muted-foreground">Piso {room.floor}</p>
         </div>
         <div className="text-right">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${statusConfig.bg}/20 ${statusConfig.text}`}>
             <div className={`w-2 h-2 rounded-full ${statusConfig.bg}`} />
-            {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+            {room.status === 'available'
+              ? 'Disponible'
+              : room.status === 'occupied'
+              ? 'Ocupada'
+              : room.status === 'cleaning'
+              ? 'En limpieza'
+              : room.status === 'maintenance'
+              ? 'Mantenimiento'
+              : 'Bloqueada'}
           </div>
         </div>
       </div>
 
       <div className="space-y-2 mb-4 py-4 border-y border-border">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Type:</span>
+          <span className="text-sm text-muted-foreground">Tipo:</span>
           <span className="text-sm font-semibold capitalize">{room.type}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Max Occupancy:</span>
-          <span className="text-sm font-semibold">{room.maxOccupancy} {room.maxOccupancy === 1 ? 'guest' : 'guests'}</span>
+          <span className="text-sm text-muted-foreground">Capacidad:</span>
+          <span className="text-sm font-semibold">{room.maxOccupancy} huésped(es)</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Rate:</span>
-          <span className="text-sm font-bold text-primary">${room.price}/night</span>
+          <span className="text-sm text-muted-foreground">Tarifa:</span>
+          <span className="text-sm font-bold text-primary">${room.price}/noche</span>
         </div>
       </div>
 
@@ -62,45 +74,62 @@ export function RoomCard({ room, onEdit, onStatusChange }: RoomCardProps) {
 
       {room.lastCleaned && (
         <p className="text-xs text-muted-foreground mb-4">
-          Last cleaned: {new Date(room.lastCleaned).toLocaleDateString()}
+          Última limpieza: {new Date(room.lastCleaned).toLocaleDateString()}
         </p>
       )}
 
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1 gap-2"
-          onClick={() => onEdit?.(room)}
-        >
-          <Edit2 size={16} />
-          Edit
-        </Button>
-        <div className="relative">
+      <div className="flex gap-2 flex-wrap">
+        {canEdit && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex-1 gap-2"
+            onClick={() => onEdit?.(room)}
           >
-            Status
+            <Edit2 size={16} />
+            Editar
           </Button>
-          {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-lg shadow-lg z-10">
-              {(['available', 'occupied', 'cleaning', 'maintenance', 'blocked'] as const).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    onStatusChange?.(room.id, status)
-                    setDropdownOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg capitalize"
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+        {canChangeStatus && (
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              Estado
+            </Button>
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-lg shadow-lg z-10">
+                {(['available', 'occupied', 'cleaning', 'maintenance', 'blocked'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      onStatusChange?.(room.id, status)
+                      setDropdownOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg capitalize"
+                  >
+                    {status === 'available'
+                      ? 'Disponible'
+                      : status === 'occupied'
+                      ? 'Ocupada'
+                      : status === 'cleaning'
+                      ? 'En limpieza'
+                      : status === 'maintenance'
+                      ? 'Mantenimiento'
+                      : 'Bloqueada'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {onDelete && canDelete && (
+          <Button variant="destructive" size="sm" className="flex-1" onClick={() => onDelete(room.id)}>
+            Eliminar
+          </Button>
+        )}
       </div>
     </Card>
   )

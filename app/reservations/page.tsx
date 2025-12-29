@@ -6,12 +6,11 @@ import { ReservationFilter, ReservationFilters } from '@/components/reservations
 import { ReservationModal } from '@/components/reservations/reservation-modal'
 import { Button } from '@/components/ui/button'
 import { Plus, Calendar } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { mockReservations } from '@/lib/mock-data'
+import { useEffect, useMemo, useState } from 'react'
 import { Reservation } from '@/lib/types'
 
 export default function ReservationsPage() {
-  const [reservations, setReservations] = useState<Reservation[]>(mockReservations)
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const [filters, setFilters] = useState<ReservationFilters>({
     search: '',
     status: 'all',
@@ -23,6 +22,23 @@ export default function ReservationsPage() {
 
   const now = new Date()
   now.setHours(0, 0, 0, 0)
+
+  useEffect(() => {
+    async function loadReservations() {
+      const response = await fetch('/api/reservations')
+      const data = await response.json()
+      const parsed = (data.reservations || []).map((res: any) => ({
+        ...res,
+        checkInDate: new Date(res.checkInDate),
+        checkOutDate: new Date(res.checkOutDate),
+        createdAt: new Date(res.createdAt),
+        updatedAt: new Date(res.updatedAt),
+      }))
+      setReservations(parsed)
+    }
+
+    loadReservations()
+  }, [])
 
   const filteredReservations = useMemo(() => {
     return reservations.filter((res) => {

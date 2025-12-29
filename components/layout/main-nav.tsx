@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, BookOpen, Book as Door, Book as Broom, Package, Settings, LogOut, Menu, X, ChevronDown, Database } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Book as Door, Book as Broom, Package, Settings, LogOut, Menu, X, ChevronDown, Users } from 'lucide-react'
 import { useState } from 'react'
-import { mockUser } from '@/lib/mock-data'
+import { useSessionUser } from '@/lib/use-session'
 
 const navItems = [
   { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
@@ -13,7 +13,7 @@ const navItems = [
   { href: '/rooms', label: 'Habitaciones', icon: Door },
   { href: '/housekeeping', label: 'Limpieza', icon: Broom },
   { href: '/inventory', label: 'Inventario', icon: Package },
-  { href: '/base-datos', label: 'Base de Datos', icon: Database },
+  { href: '/inventory/movimientos', label: 'Movimientos', icon: Package },
   { href: '/settings', label: 'Configuración', icon: Settings },
 ]
 
@@ -21,6 +21,10 @@ export function MainNav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const { user } = useSessionUser()
+
+  const displayName = user?.name || 'Invitado'
+  const displayRole = user?.role === 'super-admin' ? 'Super administrador' : user?.role || 'Usuario'
 
   return (
     <>
@@ -54,7 +58,7 @@ export function MainNav() {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 space-y-2 px-3 overflow-y-auto">
+        <nav className="flex-1 space-y-2 px-3 overflow-y-auto pb-16">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + '/')
             return (
@@ -73,6 +77,22 @@ export function MainNav() {
               </Link>
             )
           })}
+
+          {user?.role === 'super-admin' && (
+            <Link href="/admin">
+              <button
+                onClick={() => setOpen(false)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  pathname.startsWith('/admin')
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <Users size={20} />
+                <span>Usuarios</span>
+              </button>
+            </Link>
+          )}
         </nav>
 
         {/* User Profile & Logout */}
@@ -82,10 +102,8 @@ export function MainNav() {
             className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-muted transition-colors mb-2"
           >
             <div className="text-left">
-              <p className="text-sm font-semibold">{mockUser.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {mockUser.role === 'manager' ? 'Gerente' : 'Usuario'}
-              </p>
+              <p className="text-sm font-semibold">{displayName}</p>
+              <p className="text-xs text-muted-foreground capitalize">{displayRole}</p>
             </div>
             <ChevronDown size={16} />
           </button>

@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 interface InventoryFilterProps {
   onFilterChange?: (filters: InventoryFilters) => void
+  categories?: { id: string; name: string }[]
 }
 
 export interface InventoryFilters {
@@ -15,7 +16,7 @@ export interface InventoryFilters {
   stockStatus: string
 }
 
-export function InventoryFilter({ onFilterChange }: InventoryFilterProps) {
+export function InventoryFilter({ onFilterChange, categories = [] }: InventoryFilterProps) {
   const [filters, setFilters] = useState<InventoryFilters>({
     search: '',
     category: 'all',
@@ -40,7 +41,7 @@ export function InventoryFilter({ onFilterChange }: InventoryFilterProps) {
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search by item name..."
+          placeholder="Buscar por nombre..."
           className="pl-10"
           value={filters.search}
           onChange={(e) => handleFilterChange({ search: e.target.value })}
@@ -53,11 +54,12 @@ export function InventoryFilter({ onFilterChange }: InventoryFilterProps) {
           value={filters.category}
           onChange={(e) => handleFilterChange({ category: e.target.value })}
         >
-          <option value="all">All Categories</option>
-          <option value="supplies">Supplies</option>
-          <option value="amenities">Amenities</option>
-          <option value="equipment">Equipment</option>
-          <option value="linens">Linens</option>
+          <option value="all">Todas las categorías</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
         </select>
 
         <select
@@ -65,9 +67,9 @@ export function InventoryFilter({ onFilterChange }: InventoryFilterProps) {
           value={filters.stockStatus}
           onChange={(e) => handleFilterChange({ stockStatus: e.target.value })}
         >
-          <option value="all">All Stock Levels</option>
-          <option value="low">Low Stock</option>
-          <option value="good">Good Stock</option>
+          <option value="all">Todos los niveles</option>
+          <option value="low">Stock bajo</option>
+          <option value="good">Stock suficiente</option>
         </select>
 
         <Button
@@ -77,7 +79,7 @@ export function InventoryFilter({ onFilterChange }: InventoryFilterProps) {
           className="gap-2"
         >
           <X size={16} />
-          Reset
+          Restablecer
         </Button>
       </div>
     </div>
